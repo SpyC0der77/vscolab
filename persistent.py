@@ -59,16 +59,24 @@ class Persistence:
             path.write_text(DEFAULT_IGNORE)
         return path
 
-    def _sync_ignore_to_workspace(self) -> None:
+    def _sync_ignore_for_pull(self) -> None:
         self.workspace.mkdir(parents=True, exist_ok=True)
         (self.workspace / IGNORE_FILE).write_text(self._ignore_file().read_text())
+
+    def _sync_ignore_for_push(self) -> None:
+        ws_ignore = self.workspace / IGNORE_FILE
+        drive_ignore = self._ignore_file()
+        if ws_ignore.exists():
+            drive_ignore.write_text(ws_ignore.read_text())
+        else:
+            ws_ignore.write_text(drive_ignore.read_text())
 
     def _ensure_writable(self) -> None:
         subprocess.run(["chmod", "-R", "u+w", str(self.workspace)], check=False)
 
     def pull(self) -> None:
         print(f"Pulling from Drive into {self.workspace}...", flush=True)
-        self._sync_ignore_to_workspace()
+        self._sync_ignore_for_pull()
         subprocess.run(
             [
                 "rsync", "-rl",
@@ -82,7 +90,7 @@ class Persistence:
         self._ensure_writable()
 
     def push(self) -> None:
-        self._sync_ignore_to_workspace()
+        self._sync_ignore_for_push()
         subprocess.run(
             [
                 "ionice", "-c3", "nice", "-n", "19",
