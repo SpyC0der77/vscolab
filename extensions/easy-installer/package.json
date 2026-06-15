@@ -1,0 +1,214 @@
+{
+  "name": "easy-installer",
+  "displayName": "EasyInstaller",
+  "description": "Install programming languages, package managers, and developer tools on Linux, macOS, and Windows from VS Code.",
+  "version": "1.0.0",
+  "publisher": "vscolab",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:easyInstaller.toolsView",
+    "onCommand:easyInstaller.openDashboard",
+    "onCommand:easyInstaller.refreshTools"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "easyInstaller",
+          "title": "EasyInstaller",
+          "icon": "media/easy-installer.svg"
+        }
+      ]
+    },
+    "views": {
+      "easyInstaller": [
+        {
+          "id": "easyInstaller.toolsView",
+          "name": "EasyInstaller"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "easyInstaller.openDashboard",
+        "title": "Open Dashboard",
+        "category": "EasyInstaller",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "easyInstaller.refreshTools",
+        "title": "Refresh Tools",
+        "category": "EasyInstaller",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "easyInstaller.install",
+        "title": "Install",
+        "category": "EasyInstaller",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "easyInstaller.reinstall",
+        "title": "Reinstall",
+        "category": "EasyInstaller",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "easyInstaller.installPython",
+        "title": "Install Python",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installPip",
+        "title": "Install pip",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installUv",
+        "title": "Install uv",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installNode",
+        "title": "Install Node.js",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installNpm",
+        "title": "Install npm",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installNvm",
+        "title": "Install NVM",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installRust",
+        "title": "Install Rust",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installCargo",
+        "title": "Install Cargo",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installGo",
+        "title": "Install Go",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installJava",
+        "title": "Install Java",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installBun",
+        "title": "Install Bun",
+        "category": "EasyInstaller"
+      },
+      {
+        "command": "easyInstaller.installGit",
+        "title": "Install Git",
+        "category": "EasyInstaller"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "easyInstaller.refreshTools",
+          "when": "view == easyInstaller.toolsView",
+          "group": "navigation"
+        },
+        {
+          "command": "easyInstaller.openDashboard",
+          "when": "view == easyInstaller.toolsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "easyInstaller.install",
+          "when": "view == easyInstaller.toolsView && viewItem == easyInstaller.notInstalled",
+          "group": "inline"
+        },
+        {
+          "command": "easyInstaller.reinstall",
+          "when": "view == easyInstaller.toolsView && viewItem == easyInstaller.installed",
+          "group": "inline"
+        },
+        {
+          "command": "easyInstaller.install",
+          "when": "view == easyInstaller.toolsView && viewItem == easyInstaller.notInstalled",
+          "group": "1_actions"
+        },
+        {
+          "command": "easyInstaller.reinstall",
+          "when": "view == easyInstaller.toolsView && viewItem == easyInstaller.installed",
+          "group": "1_actions"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "EasyInstaller",
+      "properties": {
+        "easyInstaller.enableWorkspaceDetection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan workspace roots for project files and suggest missing tools."
+        },
+        "easyInstaller.enableFileDetection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Notify when opening source files whose runtime is not installed."
+        },
+        "easyInstaller.askBeforeInstall": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a confirmation dialog before running install commands."
+        },
+        "easyInstaller.supportedUbuntuOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, only Ubuntu and Debian-based Linux systems can install tools. Disable to allow Linux, macOS, and Windows."
+        },
+        "easyInstaller.dismissedFileExtensions": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "File extensions for which install prompts will not be shown again."
+        },
+        "easyInstaller.ignoredWorkspaceSuggestions": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Workspace suggestion keys to ignore (e.g. requirements.txt, package.json)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "bun run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^5.3.3"
+  }
+}
