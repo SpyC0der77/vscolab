@@ -1,9 +1,20 @@
-import subprocess, time
+import subprocess
+import time
 from pathlib import Path
+
+from extensions_install import install_extensions
 
 VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
 GIT_REPO = "https://github.com/microsoft/vscode.git"
+EXTENSIONS = [
+    # Marketplace IDs:
+    # "ms-python.python",
+    # VSIX from URL:
+    # {"vsix": "easy-installer-1.0.0.vsix", "url": "https://..."},
+]
+SERVER_DATA_DIR = Path("/content/.openvscode-server-data")
+VSIX_CACHE_DIR = Path("/content")
 
 url = f"https://github.com/gitpod-io/openvscode-server/releases/download/{VERSION}/{VERSION}-linux-x64.tar.gz"
 tarball = f"{VERSION}-linux-x64.tar.gz"
@@ -13,6 +24,10 @@ subprocess.run(["wget", "--show-progress", "-O", tarball, url], check=True)
 
 print("Extracting...", flush=True)
 subprocess.run(["tar", "-xzf", tarball], check=True)
+
+local_server = Path(f"/content/{VERSION}-linux-x64")
+server_bin = local_server / "bin/openvscode-server"
+install_extensions(server_bin, EXTENSIONS, SERVER_DATA_DIR, VSIX_CACHE_DIR)
 
 folder = Path("/content")
 if GIT_REPO:
@@ -28,10 +43,12 @@ folder = str(folder.resolve())
 
 print(f"Starting openvscode-server (default folder: {folder})...", flush=True)
 subprocess.Popen([
-    f"./{VERSION}-linux-x64/bin/openvscode-server",
+    str(server_bin),
     "--host", "0.0.0.0",
     "--port", str(PORT),
     "--without-connection-token",
+    "--accept-server-license-terms",
+    "--server-data-dir", str(SERVER_DATA_DIR),
     "--default-folder", folder,
 ])
 time.sleep(5)

@@ -30,6 +30,9 @@ Download / cache openvscode-server tarball
 (Optional) git clone → workspace folder
        │
        ▼
+(Optional) install extensions from ``EXTENSIONS``
+       │
+       ▼
 Start openvscode-server (--default-folder, --server-data-dir)
        │
        ▼
@@ -40,15 +43,16 @@ Iframe embed in notebook output
 
 - Downloads and extracts openvscode-server into `/content`.
 - Optionally clones a git repo into `/content/<repo-name>`.
+- Pre-install extensions via `EXTENSIONS` (empty by default).
 - No persistence — workspace is lost when the Colab VM is recycled.
 
 ### Barebones + EasyInstaller (`vscolab_extensions.ipynb` / `barebones_extensions.py`)
 
-Same as barebones, plus downloads and installs the bundled EasyInstaller VSIX before starting the server. Server state (including the extension) lives under `/content/.openvscode-server-data` for the session.
+Same as barebones, with EasyInstaller pre-populated in `EXTENSIONS`. Server state lives under `/content/.openvscode-server-data` for the session.
 
 ### Persistent (`vscolab_persistent.ipynb` / `persistent.py`)
 
-Adds a `Persistence` class that syncs the workspace with Google Drive:
+Adds a `Persistence` class that syncs the workspace with Google Drive. Supports `EXTENSIONS` (empty by default):
 
 
 | Phase    | Direction  | When                                |
@@ -71,7 +75,7 @@ The openvscode-server tarball and VS Code user data are cached under `cache/` an
 
 ### Persistent + EasyInstaller (`vscolab_persistent_extensions.ipynb` / `persistent_extensions.py`)
 
-Same as persistent, plus caches the EasyInstaller VSIX under `cache/` and installs it into `data/` on startup. EasyInstaller and other extensions persist across Colab sessions.
+Same as persistent, with EasyInstaller pre-populated in `EXTENSIONS`. VSIX files cache under `cache/`; installed extensions persist in `data/` on Drive.
 
 ## Configuration
 
@@ -83,9 +87,13 @@ Edit the constants at the top of the notebook (or script):
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the embedded iframe                              |
 | `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content` |
+| `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (marketplace IDs and/or VSIX)   |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 
 
+`EXTENSIONS` entries are marketplace IDs (`"ms-python.python"`) or VSIX dicts (`{"vsix": "name.vsix", "url": "https://..."}`). The `*_extensions` notebooks ship with EasyInstaller pre-configured.
+
+After editing a `.py` file, run `python sync_notebooks.py` to regenerate the matching notebook (install logic is inlined for Colab).
 ## `.vscolabignore`
 
 Patterns listed in `.vscolabignore` stay on the Colab VM and are never pushed to Drive. A default file is created on first run:
@@ -114,6 +122,8 @@ vscolab/
 ├── persistent.py                      # Script source for persistent notebook
 ├── barebones_extensions.py            # Script source for barebones + EasyInstaller
 ├── persistent_extensions.py           # Script source for persistent + EasyInstaller
+├── extensions_install.py              # Shared extension install helpers
+├── sync_notebooks.py                  # Regenerate .ipynb from .py sources
 └── extensions/
     └── easy-installer/                # VS Code extension for installing dev tools
 ```
