@@ -2,6 +2,7 @@
 
 Syncs the VS Code ``--default-folder`` path with ``MyDrive/vscolab/`` on Drive.
 Load: pull once (Drive -> workspace). Runtime: push-only background sync.
+Pre-installs extensions from ``EXTENSIONS`` (marketplace IDs and/or VSIX).
 """
 
 import subprocess
@@ -9,6 +10,7 @@ import threading
 import time
 from pathlib import Path
 
+from extensions_install import install_extensions
 from google.colab import drive, output
 
 SYNC_INTERVAL = 5
@@ -28,6 +30,12 @@ venv/
 VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
 GIT_REPO = "https://github.com/microsoft/vscode.git"
+EXTENSIONS = [
+    # Marketplace IDs:
+    # "ms-python.python",
+    # VSIX from URL:
+    # {"vsix": "easy-installer-1.0.0.vsix", "url": "https://..."},
+]
 
 
 class Persistence:
@@ -136,6 +144,7 @@ url = f"https://github.com/gitpod-io/openvscode-server/releases/download/{VERSIO
 tarball = f"{VERSION}-linux-x64.tar.gz"
 tarball_path = p.cache_dir / tarball
 local_server = Path(f"/content/{VERSION}-linux-x64")
+server_bin = local_server / "bin/openvscode-server"
 
 if not tarball_path.exists():
     print("Downloading openvscode-server...", flush=True)
@@ -149,6 +158,8 @@ if not local_server.exists():
 else:
     print(f"Using extracted server at {local_server}", flush=True)
 
+install_extensions(server_bin, EXTENSIONS, p.data_dir, p.cache_dir)
+
 p.push()
 p.start_push_loop()
 
@@ -156,7 +167,7 @@ folder = str(folder.resolve())
 
 print(f"Starting openvscode-server (default folder: {folder})...", flush=True)
 subprocess.Popen([
-    str(local_server / "bin/openvscode-server"),
+    str(server_bin),
     "--host", "0.0.0.0",
     "--port", str(PORT),
     "--without-connection-token",
