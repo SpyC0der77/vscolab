@@ -4,14 +4,12 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 
 ## Quick start
 
-| Notebook | Description |
-|----------|-------------|
-| [vscolab.ipynb](vscolab.ipynb) | Minimal setup — download server, open workspace |
-| [vscolab_persistent.ipynb](vscolab_persistent.ipynb) | Same as above, with Drive-backed persistence |
 
-**Barebones:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab.ipynb)
+|                   | Ephemeral                                                                                                         | **Persistent**                                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **EasyInstaller** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab.ipynb)            | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent.ipynb)            |
+| **Barebones**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_extensions.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent_extensions.ipynb) |
 
-**Persistent:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent.ipynb)
 
 1. Open a notebook in Colab.
 2. Run all cells.
@@ -44,14 +42,20 @@ Iframe embed in notebook output
 - Optionally clones a git repo into `/content/<repo-name>`.
 - No persistence — workspace is lost when the Colab VM is recycled.
 
+### Barebones + EasyInstaller (`vscolab_extensions.ipynb` / `barebones_extensions.py`)
+
+Same as barebones, plus downloads and installs the bundled EasyInstaller VSIX before starting the server. Server state (including the extension) lives under `/content/.openvscode-server-data` for the session.
+
 ### Persistent (`vscolab_persistent.ipynb` / `persistent.py`)
 
 Adds a `Persistence` class that syncs the workspace with Google Drive:
 
-| Phase | Direction | When |
-|-------|-----------|------|
-| **Pull** | Drive → VM | Once at startup |
+
+| Phase    | Direction  | When                                |
+| -------- | ---------- | ----------------------------------- |
+| **Pull** | Drive → VM | Once at startup                     |
 | **Push** | VM → Drive | Every 5 seconds (background thread) |
+
 
 Drive layout:
 
@@ -65,16 +69,22 @@ MyDrive/vscolab/
 
 The openvscode-server tarball and VS Code user data are cached under `cache/` and `data/` on Drive so subsequent sessions skip re-downloading and preserve extensions.
 
+### Persistent + EasyInstaller (`vscolab_persistent_extensions.ipynb` / `persistent_extensions.py`)
+
+Same as persistent, plus caches the EasyInstaller VSIX under `cache/` and installs it into `data/` on startup. EasyInstaller and other extensions persist across Colab sessions.
+
 ## Configuration
 
 Edit the constants at the top of the notebook (or script):
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `VERSION` | `openvscode-server-v1.109.5` | Server release to download |
-| `PORT` | `3000` | Port for the embedded iframe |
-| `GIT_REPO` | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content` |
-| `SYNC_INTERVAL` | `5` | Seconds between Drive pushes (persistent only) |
+
+| Variable        | Default                                   | Purpose                                                   |
+| --------------- | ----------------------------------------- | --------------------------------------------------------- |
+| `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
+| `PORT`          | `3000`                                    | Port for the embedded iframe                              |
+| `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content` |
+| `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
+
 
 ## `.vscolabignore`
 
@@ -96,12 +106,16 @@ Edit `.vscolabignore` in your workspace (via VS Code in Colab or at `/content/<r
 
 ```
 vscolab/
-├── vscolab.ipynb              # Barebones Colab notebook
-├── vscolab_persistent.ipynb   # Persistent Colab notebook
-├── barebones.py               # Script source for barebones notebook
-├── persistent.py              # Script source for persistent notebook
+├── vscolab.ipynb                      # Barebones Colab notebook
+├── vscolab_persistent.ipynb           # Persistent Colab notebook
+├── vscolab_extensions.ipynb           # Barebones + EasyInstaller
+├── vscolab_persistent_extensions.ipynb  # Persistent + EasyInstaller
+├── barebones.py                       # Script source for barebones notebook
+├── persistent.py                      # Script source for persistent notebook
+├── barebones_extensions.py            # Script source for barebones + EasyInstaller
+├── persistent_extensions.py           # Script source for persistent + EasyInstaller
 └── extensions/
-    └── easy-installer/        # VS Code extension for installing dev tools
+    └── easy-installer/                # VS Code extension for installing dev tools
 ```
 
 The `.py` files mirror the notebook cells and are useful for local editing or diffing.
@@ -110,7 +124,7 @@ The `.py` files mirror the notebook cells and are useful for local editing or di
 
 The repo includes [EasyInstaller](extensions/easy-installer/), a VS Code sidebar extension for installing languages and tools (Python, Node.js, Rust, Go, Java, Git, and more) from the integrated terminal.
 
-Install it in openvscode-server after the first session, or build from source:
+Use [vscolab_extensions.ipynb](vscolab_extensions.ipynb) or [vscolab_persistent_extensions.ipynb](vscolab_persistent_extensions.ipynb) to have it installed automatically, or install it manually after the first session. Build from source:
 
 ```bash
 cd extensions/easy-installer
