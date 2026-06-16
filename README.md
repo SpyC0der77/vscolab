@@ -7,8 +7,8 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 
 |                   | Ephemeral                                                                                                         | **Persistent**                                                                                                               |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **EasyInstaller** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab.ipynb)            | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent.ipynb)            |
-| **Barebones**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_extensions.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent_extensions.ipynb) |
+| **Barebones**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab.ipynb)            | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent.ipynb)            |
+| **EasyInstaller** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_extensions.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent_extensions.ipynb) |
 
 
 1. Open a notebook in Colab.
