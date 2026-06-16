@@ -136,3 +136,7 @@ See [extensions/easy-installer/README.md](extensions/easy-installer/README.md) f
 ## License
 
 MIT
+
+
+## NOTE
+This may be against Google's terms of service. Use at your own risk; I am not liable for any account loss or data deletion caused by use of this project.
