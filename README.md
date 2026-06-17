@@ -7,6 +7,7 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 
 |                   | Ephemeral                                                                                                         | **Persistent**                                                                                                               |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Atomic**        | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_atomic.ipynb)     | —                                                                                                                            |
 | **Barebones**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab.ipynb)            | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent.ipynb)            |
 | **EasyInstaller** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_extensions.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent_extensions.ipynb) |
 
@@ -18,7 +19,7 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 
 ## How it works
 
-Both notebooks bootstrap **openvscode-server** on port `3000` and expose it with Colab's `output.serve_kernel_port_as_iframe()`.
+All notebooks bootstrap **openvscode-server** on port `3000` and expose it with Colab's `output.serve_kernel_port_as_iframe()`.
 
 ```
 Colab notebook cell
@@ -30,14 +31,18 @@ Download / cache openvscode-server tarball
 (Optional) git clone → workspace folder
        │
        ▼
-(Optional) install extensions from ``EXTENSIONS``
+(Optional) install extensions from ``EXTENSIONS``  ← barebones, persistent, extensions variants
        │
        ▼
-Start openvscode-server (--default-folder, --server-data-dir)
+Start openvscode-server (--default-folder; optional --server-data-dir)
        │
        ▼
 Iframe embed in notebook output
 ```
+
+### Atomic (`vscolab_atomic.ipynb` / `atomic.py`)
+
+Minimal launcher — download, extract, start openvscode-server, embed in Colab. No extension pre-install, no `server-data-dir`, no Drive sync.
 
 ### Barebones (`vscolab.ipynb` / `barebones.py`)
 
@@ -87,13 +92,14 @@ Edit the constants at the top of the notebook (or script):
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the embedded iframe                              |
 | `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content` |
-| `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (marketplace IDs and/or VSIX)   |
+| `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (barebones/persistent only)   |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 
 
 `EXTENSIONS` entries are marketplace IDs (`"ms-python.python"`) or VSIX dicts (`{"vsix": "name.vsix", "url": "https://..."}`). The `*_extensions` notebooks ship with EasyInstaller pre-configured.
 
-After editing a `.py` file, run `python sync_notebooks.py` to regenerate the matching notebook (install logic is inlined for Colab).
+After editing a `.py` file, run `python sync_notebooks.py` to regenerate the matching notebook (extension install logic is inlined for Colab where needed).
+
 ## `.vscolabignore`
 
 Patterns listed in `.vscolabignore` stay on the Colab VM and are never pushed to Drive. A default file is created on first run:
@@ -114,10 +120,12 @@ Edit `.vscolabignore` in your workspace (via VS Code in Colab or at `/content/<r
 
 ```
 vscolab/
+├── vscolab_atomic.ipynb               # Atomic Colab notebook (launch only)
 ├── vscolab.ipynb                      # Barebones Colab notebook
 ├── vscolab_persistent.ipynb           # Persistent Colab notebook
 ├── vscolab_extensions.ipynb           # Barebones + EasyInstaller
 ├── vscolab_persistent_extensions.ipynb  # Persistent + EasyInstaller
+├── atomic.py                          # Script source for atomic notebook
 ├── barebones.py                       # Script source for barebones notebook
 ├── persistent.py                      # Script source for persistent notebook
 ├── barebones_extensions.py            # Script source for barebones + EasyInstaller

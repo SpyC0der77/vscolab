@@ -8,6 +8,7 @@ INSTALL = (ROOT / "extensions_install.py").read_text(encoding="utf-8").rstrip()
 IMPORT_LINE = "from extensions_install import install_extensions\n"
 
 PAIRINGS = [
+    ("atomic.py", "vscolab_atomic.ipynb"),
     ("barebones.py", "vscolab.ipynb"),
     ("persistent.py", "vscolab_persistent.ipynb"),
     ("barebones_extensions.py", "vscolab_extensions.ipynb"),
@@ -18,7 +19,7 @@ PAIRINGS = [
 def notebook_source(py_path: Path) -> str:
     source = py_path.read_text(encoding="utf-8")
     if IMPORT_LINE not in source:
-        raise SystemExit(f"Missing import in {py_path}")
+        return source
     source = source.replace(IMPORT_LINE, "")
     return INSTALL + "\n\n" + source.lstrip()
 
