@@ -50,12 +50,19 @@ def sync(py_name: str, ipynb_name: str) -> bool:
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
     new_source = cell_source_lines(source)
     changed = False
+    code_cell_found = False
     for cell in nb["cells"]:
         if cell["cell_type"] == "code":
+            code_cell_found = True
             if cell["source"] != new_source:
                 cell["source"] = new_source
                 changed = True
             break
+    if not code_cell_found:
+        raise SystemExit(
+            f"{ipynb_name} has no code cells to synchronize. "
+            "Add a code cell or run: python sync_notebooks.py"
+        )
     if changed:
         nb_path.write_text(json.dumps(nb, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"Synced {ipynb_name}")
