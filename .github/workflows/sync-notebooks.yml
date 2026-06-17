@@ -1,0 +1,63 @@
+name: Sync notebooks
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - barebones.py
+      - barebones_extensions.py
+      - persistent.py
+      - persistent_extensions.py
+      - extensions_install.py
+      - sync_notebooks.py
+      - .github/workflows/sync-notebooks.yml
+  pull_request:
+    paths:
+      - barebones.py
+      - barebones_extensions.py
+      - persistent.py
+      - persistent_extensions.py
+      - extensions_install.py
+      - sync_notebooks.py
+      - vscolab.ipynb
+      - vscolab_extensions.ipynb
+      - vscolab_persistent.ipynb
+      - vscolab_persistent_extensions.ipynb
+      - .github/workflows/sync-notebooks.yml
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Check notebooks
+        run: python sync_notebooks.py --check
+
+  sync:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync notebooks
+        run: python sync_notebooks.py
+
+      - name: Commit synced notebooks
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5
+        with:
+          commit_message: Sync notebooks from .py sources
+          file_pattern: "*.ipynb"
