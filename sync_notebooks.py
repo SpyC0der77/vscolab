@@ -23,20 +23,58 @@ def notebook_source(py_path: Path) -> str:
     return INSTALL + "\n\n" + source.lstrip()
 
 
-def sync(py_name: str, ipynb_name: str) -> None:
-    source = notebook_source(ROOT / py_name)
-    nb_path = ROOT / ipynb_name
+def cell_source_lines(source: str) -> list[str]:
+    lines = [line + "\n" for line in source.splitlines()]
+    if lines:
+        lines[-1] = lines[-1].rstrip("\n")
+    return lines
+
+
+def first_code_cell_source(nb_path: Path) -> list[str] | None:
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
     for cell in nb["cells"]:
         if cell["cell_type"] == "code":
-            cell["source"] = [line + "\n" for line in source.splitlines()]
-            if cell["source"]:
-                cell["source"][-1] = cell["source"][-1].rstrip("\n")
+            return cell["source"]
+    return None
+
+
+def is_synced(py_name: str, ipynb_name: str) -> bool:
+    expected = cell_source_lines(notebook_source(ROOT / py_name))
+    actual = first_code_cell_source(ROOT / ipynb_name)
+    return actual == expected
+
+
+def sync(py_name: str, ipynb_name: str) -> bool:
+    source = notebook_source(ROOT / py_name)
+    nb_path = ROOT / ipynb_name
+    nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    new_source = cell_source_lines(source)
+    changed = False
+    for cell in nb["cells"]:
+        if cell["cell_type"] == "code":
+            if cell["source"] != new_source:
+                cell["source"] = new_source
+                changed = True
             break
-    nb_path.write_text(json.dumps(nb, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Synced {ipynb_name}")
+    if changed:
+        nb_path.write_text(json.dumps(nb, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"Synced {ipynb_name}")
+    return changed
+
+
+def check() -> None:
+    stale = [ipynb for py, ipynb in PAIRINGS if not is_synced(py, ipynb)]
+    if stale:
+        names = ", ".join(stale)
+        raise SystemExit(f"Notebooks out of sync: {names}. Run: python sync_notebooks.py")
 
 
 if __name__ == "__main__":
-    for py_name, ipynb_name in PAIRINGS:
-        sync(py_name, ipynb_name)
+    import sys
+
+    if "--check" in sys.argv:
+        check()
+        print("Notebooks are in sync.")
+    else:
+        for py_name, ipynb_name in PAIRINGS:
+            sync(py_name, ipynb_name)
