@@ -91,7 +91,7 @@ Edit the constants at the top of the notebook (or script):
 | --------------- | ----------------------------------------- | --------------------------------------------------------- |
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the Colab proxy URL                              |
-| `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content/workspace` |
+| `GIT_REPO`      | `""`                                      | Repo to clone as workspace; uses `/content/workspace` when empty |
 | `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (barebones/persistent only)   |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 

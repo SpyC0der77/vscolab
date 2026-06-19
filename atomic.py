@@ -4,7 +4,7 @@ from pathlib import Path
 
 VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
-GIT_REPO = "https://github.com/microsoft/vscode.git"
+GIT_REPO = ""
 
 url = f"https://github.com/gitpod-io/openvscode-server/releases/download/{VERSION}/{VERSION}-linux-x64.tar.gz"
 tarball = f"{VERSION}-linux-x64.tar.gz"

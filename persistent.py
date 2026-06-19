@@ -29,7 +29,7 @@ venv/
 
 VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
-GIT_REPO = "https://github.com/microsoft/vscode.git"
+GIT_REPO = ""
 EXTENSIONS = [
     # Marketplace IDs:
     # "ms-python.python",
