@@ -47,7 +47,7 @@ Minimal launcher — download, extract, start openvscode-server, print proxy URL
 ### Barebones (`vscolab.ipynb` / `barebones.py`)
 
 - Downloads and extracts openvscode-server into `/content`.
-- Optionally clones a git repo into `/content/<repo-name>`.
+- Optionally clones a git repo into `/content/<repo-name>`; otherwise uses `/content/workspace`.
 - Pre-install extensions via `EXTENSIONS` (empty by default).
 - No persistence — workspace is lost when the Colab VM is recycled.
 
@@ -91,7 +91,7 @@ Edit the constants at the top of the notebook (or script):
 | --------------- | ----------------------------------------- | --------------------------------------------------------- |
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the Colab proxy URL                              |
-| `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content` |
+| `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content/workspace` |
 | `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (barebones/persistent only)   |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 
@@ -114,7 +114,7 @@ venv/
 .git/
 ```
 
-Edit `.vscolabignore` in your workspace (via VS Code in Colab or at `/content/<repo>/.vscolabignore`).
+Edit `.vscolabignore` in your workspace (via VS Code in Colab or at `/content/workspace/.vscolabignore`).
 
 ## Repository layout
 

@@ -32,7 +32,7 @@ local_server = Path(f"/content/{VERSION}-linux-x64")
 server_bin = local_server / "bin/openvscode-server"
 install_extensions(server_bin, EXTENSIONS, SERVER_DATA_DIR, VSIX_CACHE_DIR)
 
-folder = Path("/content")
+folder = Path("/content/workspace")
 if GIT_REPO:
     name = GIT_REPO.rstrip("/").removesuffix(".git").split("/")[-1]
     folder = Path(f"/content/{name}")
@@ -41,6 +41,8 @@ if GIT_REPO:
         subprocess.run(["git", "clone", "--progress", GIT_REPO, str(folder)], check=True)
     else:
         print(f"Using existing clone at {folder}", flush=True)
+else:
+    folder.mkdir(parents=True, exist_ok=True)
 
 folder = str(folder.resolve())
 

@@ -126,7 +126,7 @@ class Persistence:
         )
 
 
-folder = Path("/content")
+folder = Path("/content/workspace")
 if GIT_REPO:
     name = GIT_REPO.rstrip("/").removesuffix(".git").split("/")[-1]
     folder = Path(f"/content/{name}")
