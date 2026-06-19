@@ -1,6 +1,6 @@
 # vscolab
 
-Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [Google Colab](https://colab.research.google.com/) and edit code in a full VS Code UI embedded in the notebook. Optional Google Drive sync keeps your workspace across Colab sessions.
+Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [Google Colab](https://colab.research.google.com/) and edit code in a full VS Code UI in a new browser tab. Optional Google Drive sync keeps your workspace across Colab sessions.
 
 ## Quick start
 
@@ -15,11 +15,11 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 1. Open a notebook in Colab.
 2. Run all cells.
 3. When prompted, authorize Google Drive (persistent notebook only).
-4. VS Code appears in an iframe below the cell output.
+4. Click the **Open VS Code** URL printed in the cell output.
 
 ## How it works
 
-All notebooks bootstrap **openvscode-server** on port `3000` and expose it with Colab's `output.serve_kernel_port_as_iframe()`.
+All notebooks bootstrap **openvscode-server** on port `3000` and expose it with Colab's `google.colab.kernel.proxyPort()`.
 
 ```
 Colab notebook cell
@@ -37,12 +37,12 @@ Download / cache openvscode-server tarball
 Start openvscode-server (--default-folder; optional --server-data-dir)
        │
        ▼
-Iframe embed in notebook output
+Print Colab proxy URL to open VS Code in a new tab
 ```
 
 ### Atomic (`vscolab_atomic.ipynb` / `atomic.py`)
 
-Minimal launcher — download, extract, start openvscode-server, embed in Colab. No extension pre-install, no `server-data-dir`, no Drive sync.
+Minimal launcher — download, extract, start openvscode-server, print proxy URL. No extension pre-install, no `server-data-dir`, no Drive sync.
 
 ### Barebones (`vscolab.ipynb` / `barebones.py`)
 
@@ -90,7 +90,7 @@ Edit the constants at the top of the notebook (or script):
 | Variable        | Default                                   | Purpose                                                   |
 | --------------- | ----------------------------------------- | --------------------------------------------------------- |
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
-| `PORT`          | `3000`                                    | Port for the embedded iframe                              |
+| `PORT`          | `3000`                                    | Port for the Colab proxy URL                              |
 | `GIT_REPO`      | `https://github.com/microsoft/vscode.git` | Repo to clone as workspace; set to `""` to use `/content` |
 | `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (barebones/persistent only)   |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
@@ -163,7 +163,7 @@ See [extensions/easy-installer/README.md](extensions/easy-installer/README.md) f
 - Colab VMs are ephemeral; without the persistent notebook, all local changes are lost on disconnect.
 - Background sync is push-only after the initial pull — edits made directly on Drive while a session is running may be overwritten on the next push.
 - Large folders (e.g. `node_modules`, `.git`) should stay in `.vscolabignore` to avoid slow syncs and Drive quota use.
-- `--without-connection-token` is used for Colab iframe embedding; do not expose the server outside a trusted Colab session.
+- `--without-connection-token` is used for Colab proxy access; do not expose the server outside a trusted Colab session.
 
 ## License
 

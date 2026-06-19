@@ -55,6 +55,7 @@ time.sleep(5)
 print(f"openvscode-server running on port {PORT} — {folder}", flush=True)
 
 # CELL 2
-from google.colab import output
+from google.colab.output import eval_js
 
-output.serve_kernel_port_as_iframe(PORT, height=800)
+url = eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
+print(f"Open VS Code: {url}", flush=True)
