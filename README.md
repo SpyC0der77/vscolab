@@ -103,7 +103,7 @@ Edit the constants at the top of the notebook (or script):
 
 openvscode-server does not include GitHub Copilot Chat. Instead, Standard and higher tiers:
 
-1. Install **Continue** from Open VSX.
+1. Download and install **Continue** (linux-x64 VSIX from Open VSX).
 2. Start a local proxy on `127.0.0.1:8787` that wraps `google.colab.ai` as an OpenAI-compatible `/v1/chat/completions` API.
 3. Write `~/.continue/config.yaml` pointing Continue at that proxy (dummy API key `colab` — no GitHub account).
 

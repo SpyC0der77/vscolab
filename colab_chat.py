@@ -18,8 +18,17 @@ from typing import Any, Iterator
 from urllib.parse import urlparse
 
 GEMINI_PROXY_PORT = 8787
-CONTINUE_EXTENSION = "Continue.continue"
-DEFAULT_MODEL = "google/gemini-2.5-flash"
+# Platform-specific VSIX — marketplace ID install often fails on openvscode-server.
+CONTINUE_VSIX_VERSION = "1.3.40"
+CONTINUE_EXTENSION = {
+    "vsix": f"Continue.continue-{CONTINUE_VSIX_VERSION}@linux-x64.vsix",
+    "url": (
+        "https://open-vsx.org/api/Continue/continue/linux-x64/"
+        f"{CONTINUE_VSIX_VERSION}/file/"
+        f"Continue.continue-{CONTINUE_VSIX_VERSION}@linux-x64.vsix"
+    ),
+}
+DEFAULT_MODEL = "google/gemini-3.5-flash"
 
 
 def _messages_to_prompt(messages: list[dict[str, Any]]) -> str:
