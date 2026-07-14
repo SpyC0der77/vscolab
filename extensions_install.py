@@ -37,6 +37,8 @@ def _ensure_server_settings(server_data_dir: Path) -> None:
     if settings_path.exists():
         settings = json.loads(settings_path.read_text())
     settings["extensions.verifySignature"] = False
+    settings["security.workspace.trust.enabled"] = False
+    settings["security.workspace.trust.startupPrompt"] = "never"
     settings_path.write_text(json.dumps(settings, indent=2) + "\n")
 
 
@@ -129,11 +131,11 @@ def install_extensions(
     server_data_dir: Path,
     cache_dir: Path,
 ) -> None:
-    if not extensions:
-        return
-
     server_data_dir.mkdir(parents=True, exist_ok=True)
     _ensure_server_settings(server_data_dir)
+
+    if not extensions:
+        return
 
     for ext in extensions:
         if isinstance(ext, str):

@@ -37,6 +37,7 @@ subprocess.Popen([
     "--host", "0.0.0.0",
     "--port", str(PORT),
     "--without-connection-token",
+    "--disable-workspace-trust",
     "--default-folder", folder,
 ])
 time.sleep(5)

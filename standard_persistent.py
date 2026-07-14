@@ -174,6 +174,7 @@ subprocess.Popen([
     "--host", "0.0.0.0",
     "--port", str(PORT),
     "--without-connection-token",
+    "--disable-workspace-trust",
     "--accept-server-license-terms",
     "--server-data-dir", str(p.data_dir),
     "--default-folder", folder,
