@@ -4,25 +4,28 @@ on:
   push:
     branches: [master, main]
     paths:
-      - barebones.py
-      - barebones_extensions.py
-      - persistent.py
-      - persistent_extensions.py
+      - lite.py
+      - standard.py
+      - standard_persistent.py
+      - studio.py
+      - studio_persistent.py
       - extensions_install.py
       - sync_notebooks.py
       - .github/workflows/sync-notebooks.yml
   pull_request:
     paths:
-      - barebones.py
-      - barebones_extensions.py
-      - persistent.py
-      - persistent_extensions.py
+      - lite.py
+      - standard.py
+      - standard_persistent.py
+      - studio.py
+      - studio_persistent.py
       - extensions_install.py
       - sync_notebooks.py
-      - vscolab.ipynb
-      - vscolab_extensions.ipynb
-      - vscolab_persistent.ipynb
-      - vscolab_persistent_extensions.ipynb
+      - vscolab_lite.ipynb
+      - vscolab_standard.ipynb
+      - vscolab_standard_persistent.ipynb
+      - vscolab_studio.ipynb
+      - vscolab_studio_persistent.ipynb
       - .github/workflows/sync-notebooks.yml
 
 jobs:

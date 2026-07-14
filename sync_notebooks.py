@@ -8,11 +8,11 @@ INSTALL = (ROOT / "extensions_install.py").read_text(encoding="utf-8").rstrip()
 IMPORT_LINE = "from extensions_install import install_extensions\n"
 
 PAIRINGS = [
-    ("atomic.py", "vscolab_atomic.ipynb"),
-    ("barebones.py", "vscolab.ipynb"),
-    ("persistent.py", "vscolab_persistent.ipynb"),
-    ("barebones_extensions.py", "vscolab_extensions.ipynb"),
-    ("persistent_extensions.py", "vscolab_persistent_extensions.ipynb"),
+    ("lite.py", "vscolab_lite.ipynb"),
+    ("standard.py", "vscolab_standard.ipynb"),
+    ("standard_persistent.py", "vscolab_standard_persistent.ipynb"),
+    ("studio.py", "vscolab_studio.ipynb"),
+    ("studio_persistent.py", "vscolab_studio_persistent.ipynb"),
 ]
 
 

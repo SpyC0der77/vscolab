@@ -5,11 +5,11 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 ## Quick start
 
 
-|                   | Ephemeral                                                                                                         | **Persistent**                                                                                                               |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Atomic**        | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_atomic.ipynb)     | —                                                                                                                            |
-| **Barebones**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab.ipynb)            | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent.ipynb)            |
-| **EasyInstaller** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_extensions.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_persistent_extensions.ipynb) |
+|              | Ephemeral                                                                                                          | **Persistent**                                                                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lite**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_lite.ipynb)        | —                                                                                                                                           |
+| **Standard** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_standard.ipynb)    | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_standard_persistent.ipynb)                  |
+| **Studio**   | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_studio.ipynb)      | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_studio_persistent.ipynb)                    |
 
 
 1. Open a notebook in Colab.
@@ -31,7 +31,7 @@ Download / cache openvscode-server tarball
 (Optional) git clone → workspace folder
        │
        ▼
-(Optional) install extensions from ``EXTENSIONS``  ← barebones, persistent, extensions variants
+(Optional) install extensions from ``EXTENSIONS``  ← Standard, Studio variants
        │
        ▼
 Start openvscode-server (--default-folder; optional --server-data-dir)
@@ -40,22 +40,22 @@ Start openvscode-server (--default-folder; optional --server-data-dir)
 Print Colab proxy URL to open VS Code in a new tab
 ```
 
-### Atomic (`vscolab_atomic.ipynb` / `atomic.py`)
+### Lite (`vscolab_lite.ipynb` / `lite.py`)
 
 Minimal launcher — download, extract, start openvscode-server, print proxy URL. No extension pre-install, no `server-data-dir`, no Drive sync.
 
-### Barebones (`vscolab.ipynb` / `barebones.py`)
+### Standard (`vscolab_standard.ipynb` / `standard.py`)
 
 - Downloads and extracts openvscode-server into `/content`.
 - Optionally clones a git repo into `/content/<repo-name>`; otherwise uses `/content/workspace`.
 - Pre-install extensions via `EXTENSIONS` (empty by default).
 - No persistence — workspace is lost when the Colab VM is recycled.
 
-### Barebones + EasyInstaller (`vscolab_extensions.ipynb` / `barebones_extensions.py`)
+### Studio (`vscolab_studio.ipynb` / `studio.py`)
 
-Same as barebones, with EasyInstaller pre-populated in `EXTENSIONS`. Server state lives under `/content/.openvscode-server-data` for the session.
+Same as Standard, with EasyInstaller pre-populated in `EXTENSIONS`. Server state lives under `/content/.openvscode-server-data` for the session.
 
-### Persistent (`vscolab_persistent.ipynb` / `persistent.py`)
+### Standard Persistent (`vscolab_standard_persistent.ipynb` / `standard_persistent.py`)
 
 Adds a `Persistence` class that syncs the workspace with Google Drive. Supports `EXTENSIONS` (empty by default):
 
@@ -78,9 +78,9 @@ MyDrive/vscolab/
 
 The openvscode-server tarball and VS Code user data are cached under `cache/` and `data/` on Drive so subsequent sessions skip re-downloading and preserve extensions.
 
-### Persistent + EasyInstaller (`vscolab_persistent_extensions.ipynb` / `persistent_extensions.py`)
+### Studio Persistent (`vscolab_studio_persistent.ipynb` / `studio_persistent.py`)
 
-Same as persistent, with EasyInstaller pre-populated in `EXTENSIONS`. VSIX files cache under `cache/`; installed extensions persist in `data/` on Drive.
+Same as Standard Persistent, with EasyInstaller pre-populated in `EXTENSIONS`. VSIX files cache under `cache/`; installed extensions persist in `data/` on Drive.
 
 ## Configuration
 
@@ -92,11 +92,11 @@ Edit the constants at the top of the notebook (or script):
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the Colab proxy URL                              |
 | `GIT_REPO`      | `""`                                      | Repo to clone as workspace; uses `/content/workspace` when empty |
-| `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (barebones/persistent only)   |
+| `EXTENSIONS`    | `[]` or EasyInstaller VSIX                | Extensions to pre-install (Standard/Studio only)        |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 
 
-`EXTENSIONS` entries are marketplace IDs (`"ms-python.python"`) or VSIX dicts (`{"vsix": "name.vsix", "url": "https://..."}`). The `*_extensions` notebooks ship with EasyInstaller pre-configured.
+`EXTENSIONS` entries are marketplace IDs (`"ms-python.python"`) or VSIX dicts (`{"vsix": "name.vsix", "url": "https://..."}`). Studio notebooks ship with EasyInstaller pre-configured.
 
 After editing a `.py` file, run `python sync_notebooks.py` to regenerate the matching notebook (extension install logic is inlined for Colab where needed).
 
@@ -120,16 +120,16 @@ Edit `.vscolabignore` in your workspace (via VS Code in Colab or at `/content/wo
 
 ```
 vscolab/
-├── vscolab_atomic.ipynb               # Atomic Colab notebook (launch only)
-├── vscolab.ipynb                      # Barebones Colab notebook
-├── vscolab_persistent.ipynb           # Persistent Colab notebook
-├── vscolab_extensions.ipynb           # Barebones + EasyInstaller
-├── vscolab_persistent_extensions.ipynb  # Persistent + EasyInstaller
-├── atomic.py                          # Script source for atomic notebook
-├── barebones.py                       # Script source for barebones notebook
-├── persistent.py                      # Script source for persistent notebook
-├── barebones_extensions.py            # Script source for barebones + EasyInstaller
-├── persistent_extensions.py           # Script source for persistent + EasyInstaller
+├── vscolab_lite.ipynb                 # Lite Colab notebook (launch only)
+├── vscolab_standard.ipynb             # Standard Colab notebook
+├── vscolab_standard_persistent.ipynb  # Standard + Drive sync
+├── vscolab_studio.ipynb               # Studio (EasyInstaller preloaded)
+├── vscolab_studio_persistent.ipynb    # Studio + Drive sync
+├── lite.py                            # Script source for Lite notebook
+├── standard.py                        # Script source for Standard notebook
+├── standard_persistent.py             # Script source for Standard Persistent
+├── studio.py                          # Script source for Studio notebook
+├── studio_persistent.py               # Script source for Studio Persistent
 ├── extensions_install.py              # Shared extension install helpers
 ├── sync_notebooks.py                  # Regenerate .ipynb from .py sources
 └── extensions/
@@ -142,7 +142,7 @@ The `.py` files mirror the notebook cells and are useful for local editing or di
 
 The repo includes [EasyInstaller](extensions/easy-installer/), a VS Code sidebar extension for installing languages and tools (Python, Node.js, Rust, Go, Java, Git, and more) from the integrated terminal.
 
-Use [vscolab_extensions.ipynb](vscolab_extensions.ipynb) or [vscolab_persistent_extensions.ipynb](vscolab_persistent_extensions.ipynb) to have it installed automatically, or install it manually after the first session. Build from source:
+Use [vscolab_studio.ipynb](vscolab_studio.ipynb) or [vscolab_studio_persistent.ipynb](vscolab_studio_persistent.ipynb) to have it installed automatically, or install it manually after the first session. Build from source:
 
 ```bash
 cd extensions/easy-installer
