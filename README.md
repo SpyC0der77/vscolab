@@ -48,8 +48,7 @@ Minimal launcher — download, extract, start openvscode-server, print proxy URL
 
 - Downloads and extracts openvscode-server into `/content`.
 - Optionally clones a git repo into `/content/<repo-name>`; otherwise uses `/content/workspace`.
-- Pre-installs [Continue](https://continue.dev) plus any entries in `EXTENSIONS`.
-- Starts a local OpenAI-compatible proxy over Colab's built-in Gemini (`google.colab.ai`) so chat works **without GitHub sign-in**.
+- Pre-installs any entries in `EXTENSIONS` (empty by default).
 - No persistence — workspace is lost when the Colab VM is recycled.
 
 ### Studio (`vscolab_studio.ipynb` / `studio.py`)
@@ -58,7 +57,7 @@ Same as Standard, with EasyInstaller also pre-populated in `EXTENSIONS`. Server 
 
 ### Standard Persistent (`vscolab_standard_persistent.ipynb` / `standard_persistent.py`)
 
-Adds a `Persistence` class that syncs the workspace with Google Drive. Includes Continue + Colab Gemini chat (same as Standard):
+Adds a `Persistence` class that syncs the workspace with Google Drive:
 
 
 | Phase    | Direction  | When                                |
@@ -93,21 +92,11 @@ Edit the constants at the top of the notebook (or script):
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the Colab proxy URL                              |
 | `GIT_REPO`      | `""`                                      | Repo to clone as workspace; uses `/content/workspace` when empty |
-| `EXTENSIONS`    | Continue (+ EasyInstaller on Studio)      | Extensions to pre-install (Standard/Studio only)        |
+| `EXTENSIONS`    | `[]` (EasyInstaller on Studio)            | Extensions to pre-install (Standard/Studio only)        |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 
 
-`EXTENSIONS` entries are marketplace IDs (`"ms-python.python"`) or VSIX dicts (`{"vsix": "name.vsix", "url": "https://..."}`). Standard and higher tiers always include Continue for chat. Studio notebooks also ship EasyInstaller.
-
-### Chat (Standard+)
-
-openvscode-server does not include GitHub Copilot Chat. Instead, Standard and higher tiers:
-
-1. Download and install **Continue** (linux-x64 VSIX from Open VSX).
-2. Start a local proxy on `127.0.0.1:8787` that wraps `google.colab.ai` as an OpenAI-compatible `/v1/chat/completions` API.
-3. Write `~/.continue/config.yaml` pointing Continue at that proxy (dummy API key `colab` — no GitHub account).
-
-Open the Continue sidebar in VS Code to chat. Usage follows Colab's Gemini limits for your account tier.
+`EXTENSIONS` entries are marketplace IDs (`"ms-python.python"`) or VSIX dicts (`{"vsix": "name.vsix", "url": "https://..."}`). Studio notebooks also ship EasyInstaller.
 
 After editing a `.py` file, run `python sync_notebooks.py` to regenerate the matching notebook (extension install logic is inlined for Colab where needed).
 
@@ -142,7 +131,6 @@ vscolab/
 ├── studio.py                          # Script source for Studio notebook
 ├── studio_persistent.py               # Script source for Studio Persistent
 ├── extensions_install.py              # Shared extension install helpers
-├── colab_chat.py                      # Colab Gemini proxy + Continue config
 ├── sync_notebooks.py                  # Regenerate .ipynb from .py sources
 └── extensions/
     └── easy-installer/                # VS Code extension for installing dev tools
@@ -168,8 +156,7 @@ See [extensions/easy-installer/README.md](extensions/easy-installer/README.md) f
 
 - Google Colab runtime (Linux VM)
 - Google account with Drive access (persistent notebook)
-- Network access to GitHub releases (openvscode-server download) and Open VSX (Continue)
-- Colab Gemini access via `google.colab.ai` (chat on Standard+; subject to Colab usage limits)
+- Network access to GitHub releases (openvscode-server download)
 
 ## Limitations
 

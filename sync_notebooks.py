@@ -11,10 +11,6 @@ INLINE_MODULES = [
         "from extensions_install import install_extensions\n",
         "extensions_install.py",
     ),
-    (
-        "from colab_chat import CONTINUE_EXTENSION, setup_colab_chat\n",
-        "colab_chat.py",
-    ),
 ]
 
 PAIRINGS = [

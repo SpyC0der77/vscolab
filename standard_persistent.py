@@ -10,7 +10,6 @@ import threading
 import time
 from pathlib import Path
 
-from colab_chat import CONTINUE_EXTENSION, setup_colab_chat
 from extensions_install import install_extensions
 from google.colab import drive, output
 
@@ -32,7 +31,6 @@ VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
 GIT_REPO = ""
 EXTENSIONS = [
-    CONTINUE_EXTENSION,
     # Marketplace IDs:
     # "ms-python.python",
     # VSIX from URL:
@@ -161,7 +159,6 @@ else:
     print(f"Using extracted server at {local_server}", flush=True)
 
 install_extensions(server_bin, EXTENSIONS, p.data_dir, p.cache_dir)
-setup_colab_chat()
 
 p.push()
 p.start_push_loop()
