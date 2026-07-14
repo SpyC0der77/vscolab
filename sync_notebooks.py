@@ -1,11 +1,21 @@
-"""Inline extensions_install.py into notebook cells (Colab has no local imports)."""
+"""Inline shared modules into notebook cells (Colab has no local imports)."""
 
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-INSTALL = (ROOT / "extensions_install.py").read_text(encoding="utf-8").rstrip()
-IMPORT_LINE = "from extensions_install import install_extensions\n"
+
+# Imported helpers that must be inlined into notebook cells, in order.
+INLINE_MODULES = [
+    (
+        "from extensions_install import install_extensions\n",
+        "extensions_install.py",
+    ),
+    (
+        "from colab_chat import CONTINUE_EXTENSION, setup_colab_chat\n",
+        "colab_chat.py",
+    ),
+]
 
 PAIRINGS = [
     ("lite.py", "vscolab_lite.ipynb"),
@@ -18,10 +28,15 @@ PAIRINGS = [
 
 def notebook_source(py_path: Path) -> str:
     source = py_path.read_text(encoding="utf-8")
-    if IMPORT_LINE not in source:
+    prefixes: list[str] = []
+    for import_line, module_name in INLINE_MODULES:
+        if import_line not in source:
+            continue
+        source = source.replace(import_line, "")
+        prefixes.append((ROOT / module_name).read_text(encoding="utf-8").rstrip())
+    if not prefixes:
         return source
-    source = source.replace(IMPORT_LINE, "")
-    return INSTALL + "\n\n" + source.lstrip()
+    return "\n\n".join(prefixes) + "\n\n" + source.lstrip()
 
 
 def cell_source_lines(source: str) -> list[str]:

@@ -2,6 +2,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from colab_chat import CONTINUE_EXTENSION, setup_colab_chat
 from extensions_install import install_extensions
 
 VERSION = "openvscode-server-v1.109.5"
@@ -9,6 +10,7 @@ PORT = 3000
 GIT_REPO = ""
 VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
+    CONTINUE_EXTENSION,
     {
         "vsix": "easy-installer-1.0.0.vsix",
         "url": f"{VSCOLAB_RAW}/extensions/easy-installer/easy-installer-1.0.0.vsix",
@@ -45,6 +47,8 @@ else:
     folder.mkdir(parents=True, exist_ok=True)
 
 folder = str(folder.resolve())
+
+setup_colab_chat()
 
 print(f"Starting openvscode-server (default folder: {folder})...", flush=True)
 subprocess.Popen([

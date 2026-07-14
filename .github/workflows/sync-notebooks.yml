@@ -10,6 +10,7 @@ on:
       - studio.py
       - studio_persistent.py
       - extensions_install.py
+      - colab_chat.py
       - sync_notebooks.py
       - .github/workflows/sync-notebooks.yml
   pull_request:
@@ -20,6 +21,7 @@ on:
       - studio.py
       - studio_persistent.py
       - extensions_install.py
+      - colab_chat.py
       - sync_notebooks.py
       - vscolab_lite.ipynb
       - vscolab_standard.ipynb
