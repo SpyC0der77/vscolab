@@ -17,7 +17,14 @@
     "languageModelChatProviders": [
       {
         "vendor": "colab",
-        "displayName": "Colab AI"
+        "displayName": "Colab AI",
+        "managementCommand": "colabLm.manage"
+      }
+    ],
+    "commands": [
+      {
+        "command": "colabLm.manage",
+        "title": "Colab AI: Show Bridge Status"
       }
     ],
     "configuration": {

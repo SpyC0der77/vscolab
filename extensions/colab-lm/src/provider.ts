@@ -4,6 +4,10 @@ import { BridgeClient, type BridgeMessage } from "./bridgeClient";
 const DEFAULT_MAX_INPUT = 1_000_000;
 const DEFAULT_MAX_OUTPUT = 8192;
 
+const FALLBACK_MODELS = [
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+];
+
 function getBridgeClient(): BridgeClient {
   const config = vscode.workspace.getConfiguration("colabLm");
   const baseUrl = config.get<string>("bridgeUrl", "http://127.0.0.1:8787");
@@ -28,6 +32,8 @@ function toBridgeMessages(
 }
 
 function toModelInfo(model: { id: string; name: string }): vscode.LanguageModelChatInformation {
+  // isUserSelectable is used by some VS Code builds for picker visibility but is not
+  // yet on the stable LanguageModelChatInformation type.
   return {
     id: model.id,
     name: model.name,
@@ -38,10 +44,12 @@ function toModelInfo(model: { id: string; name: string }): vscode.LanguageModelC
     tooltip: "Gemini model via google.colab.ai",
     detail: "Colab AI",
     capabilities: {
-      toolCalling: false,
+      // Agent mode filters out models without tool calling (#277165).
+      toolCalling: true,
       imageInput: false,
     },
-  };
+    isUserSelectable: true,
+  } as vscode.LanguageModelChatInformation;
 }
 
 function textLength(
@@ -60,22 +68,21 @@ function textLength(
 
 export class ColabChatModelProvider implements vscode.LanguageModelChatProvider {
   async provideLanguageModelChatInformation(
-    options: { silent: boolean },
+    _options: { silent: boolean },
     _token: vscode.CancellationToken,
   ): Promise<vscode.LanguageModelChatInformation[]> {
+    // Always return models so silent discovery can populate the picker.
+    // Connectivity failures surface when a chat request is actually sent.
     const client = getBridgeClient();
-    const healthy = await client.health();
-    if (!healthy) {
-      if (options.silent) {
-        return [];
+    try {
+      const models = await client.listModels();
+      if (models.length > 0) {
+        return models.map(toModelInfo);
       }
-      throw new Error(
-        "Colab AI bridge is not reachable. Run the vscolab AI notebook cell first.",
-      );
+    } catch {
+      // fall through to defaults
     }
-
-    const models = await client.listModels();
-    return models.map(toModelInfo);
+    return FALLBACK_MODELS.map(toModelInfo);
   }
 
   async provideLanguageModelChatResponse(
@@ -86,6 +93,13 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
     token: vscode.CancellationToken,
   ): Promise<void> {
     const client = getBridgeClient();
+    const healthy = await client.health();
+    if (!healthy) {
+      throw new Error(
+        "Colab AI bridge is not reachable. Run the vscolab AI notebook cell first.",
+      );
+    }
+
     const bridgeMessages = toBridgeMessages(messages);
     const abort = new AbortController();
 
