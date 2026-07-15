@@ -11,7 +11,7 @@ EXTENSIONS = [
     # Marketplace IDs:
     # "ms-python.python",
     # VSIX from URL:
-    # {"vsix": "easy-installer-1.0.0.vsix", "url": "https://..."},
+    # {"vsix": "name.vsix", "url": "https://..."},
 ]
 SERVER_DATA_DIR = Path("/content/.openvscode-server-data")
 VSIX_CACHE_DIR = Path("/content")

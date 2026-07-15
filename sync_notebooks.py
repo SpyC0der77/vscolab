@@ -17,8 +17,6 @@ PAIRINGS = [
     ("lite.py", "vscolab_lite.ipynb"),
     ("standard.py", "vscolab_standard.ipynb"),
     ("standard_persistent.py", "vscolab_standard_persistent.ipynb"),
-    ("studio.py", "vscolab_studio.ipynb"),
-    ("studio_persistent.py", "vscolab_studio_persistent.ipynb"),
 ]
 
 
