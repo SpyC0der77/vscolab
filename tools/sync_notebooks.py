@@ -3,7 +3,10 @@
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = ROOT / "scripts"
+LIB = ROOT / "lib"
+NOTEBOOKS = ROOT / "notebooks"
 
 # Imported helpers that must be inlined into notebook cells, in order.
 INLINE_MODULES = [
@@ -36,7 +39,7 @@ def notebook_source(py_path: Path) -> str:
         if import_line not in source:
             continue
         source = source.replace(import_line, "")
-        prefixes.append((ROOT / module_name).read_text(encoding="utf-8").rstrip())
+        prefixes.append((LIB / module_name).read_text(encoding="utf-8").rstrip())
     if not prefixes:
         return source
     return "\n\n".join(prefixes) + "\n\n" + source.lstrip()
@@ -58,14 +61,14 @@ def first_code_cell_source(nb_path: Path) -> list[str] | None:
 
 
 def is_synced(py_name: str, ipynb_name: str) -> bool:
-    expected = cell_source_lines(notebook_source(ROOT / py_name))
-    actual = first_code_cell_source(ROOT / ipynb_name)
+    expected = cell_source_lines(notebook_source(SCRIPTS / py_name))
+    actual = first_code_cell_source(NOTEBOOKS / ipynb_name)
     return actual == expected
 
 
 def sync(py_name: str, ipynb_name: str) -> bool:
-    source = notebook_source(ROOT / py_name)
-    nb_path = ROOT / ipynb_name
+    source = notebook_source(SCRIPTS / py_name)
+    nb_path = NOTEBOOKS / ipynb_name
     nb = json.loads(nb_path.read_text(encoding="utf-8"))
     new_source = cell_source_lines(source)
     changed = False
@@ -80,7 +83,7 @@ def sync(py_name: str, ipynb_name: str) -> bool:
     if not code_cell_found:
         raise SystemExit(
             f"{ipynb_name} has no code cells to synchronize. "
-            "Add a code cell or run: python sync_notebooks.py"
+            "Add a code cell or run: python tools/sync_notebooks.py"
         )
     if changed:
         nb_path.write_text(json.dumps(nb, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -92,7 +95,7 @@ def check() -> None:
     stale = [ipynb for py, ipynb in PAIRINGS if not is_synced(py, ipynb)]
     if stale:
         names = ", ".join(stale)
-        raise SystemExit(f"Notebooks out of sync: {names}. Run: python sync_notebooks.py")
+        raise SystemExit(f"Notebooks out of sync: {names}. Run: python tools/sync_notebooks.py")
 
 
 if __name__ == "__main__":

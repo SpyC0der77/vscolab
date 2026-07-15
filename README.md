@@ -14,10 +14,10 @@ AI needs the Microsoft build (Copilot Chat + LM providers). Colab `proxyPort` dr
 ## Quick start
 
 
-|          | Ephemeral                                                                                                       | Persistent (Google Drive)                                                                                                  |
-| -------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Standard | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_standard.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_standard_persistent.ipynb) |
-| AI       | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_ai.ipynb)       | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_ai_persistent.ipynb)       |
+|          | Ephemeral                                                                                                                 | Persistent (Google Drive)                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Standard | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/notebooks/vscolab_standard.ipynb) | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/notebooks/vscolab_standard_persistent.ipynb) |
+| AI       | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/notebooks/vscolab_ai.ipynb)       | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/notebooks/vscolab_ai_persistent.ipynb)       |
 
 
 Standard: run all cells, authorize Drive if asked, click the **Open VS Code** proxy URL.
@@ -29,10 +29,10 @@ AI: run all cells, finish GitHub device login (`github.com/login/device`), open 
 
 | Notebook / script                                        | Notes                                                                                     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `vscolab_standard` / `standard.py`                       | openvscode-server. Optional `EXTENSIONS` pre-install (leave `[]` for none).               |
-| `vscolab_standard_persistent` / `standard_persistent.py` | Standard + Drive sync (pull once at start, push every `SYNC_INTERVAL` seconds).           |
-| `vscolab_ai` / `ai.py`                                   | Tunnel + Colab AI bridge (`127.0.0.1:8787`) + `colab-lm` VSIX. Pick **Colab AI** in Chat. |
-| `vscolab_ai_persistent` / `ai_persistent.py`             | AI + Drive sync (CLI/tunnel creds under `data/cli`).                                      |
+| `vscolab_standard` / `scripts/standard.py`               | openvscode-server. Optional `EXTENSIONS` pre-install (leave `[]` for none).               |
+| `vscolab_standard_persistent` / `scripts/standard_persistent.py` | Standard + Drive sync (pull once at start, push every `SYNC_INTERVAL` seconds).   |
+| `vscolab_ai` / `scripts/ai.py`                           | Tunnel + Colab AI bridge (`127.0.0.1:8787`) + `colab-lm` VSIX. Pick **Colab AI** in Chat. |
+| `vscolab_ai_persistent` / `scripts/ai_persistent.py`     | AI + Drive sync (CLI/tunnel creds under `data/cli`).                                      |
 
 
 Drive layout for persistent notebooks:
@@ -45,7 +45,7 @@ MyDrive/vscolab/
 └── …                # workspace files
 ```
 
-Edit a `.py` file, then `python sync_notebooks.py` to refresh the notebooks.
+Edit a script under `scripts/`, then `python tools/sync_notebooks.py` to refresh the notebooks.
 
 ## Config
 
@@ -66,13 +66,11 @@ Set these at the top of the `.py` (or matching notebook cell):
 
 ```
 vscolab/
-├── standard.py, standard_persistent.py
-├── ai.py, ai_persistent.py
-├── vscode_bootstrap.py      # tunnel helpers
-├── colab_lm_bridge.py       # google.colab.ai HTTP bridge
+├── notebooks/               # Colab notebooks (generated from scripts/)
+├── scripts/                 # standard.py, ai.py, *_persistent.py
+├── lib/                     # vscode_bootstrap, colab_lm_bridge, extensions_install
 ├── extensions/colab-lm/     # LM Chat Provider
-├── extensions_install.py
-└── sync_notebooks.py
+└── tools/sync_notebooks.py
 ```
 
 ## Caveats

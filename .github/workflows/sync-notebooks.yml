@@ -4,29 +4,16 @@ on:
   push:
     branches: [master, main]
     paths:
-      - standard.py
-      - standard_persistent.py
-      - ai.py
-      - ai_persistent.py
-      - colab_lm_bridge.py
-      - vscode_bootstrap.py
-      - extensions_install.py
-      - sync_notebooks.py
+      - scripts/**
+      - lib/**
+      - tools/sync_notebooks.py
       - .github/workflows/sync-notebooks.yml
   pull_request:
     paths:
-      - standard.py
-      - standard_persistent.py
-      - ai.py
-      - ai_persistent.py
-      - colab_lm_bridge.py
-      - vscode_bootstrap.py
-      - extensions_install.py
-      - sync_notebooks.py
-      - vscolab_standard.ipynb
-      - vscolab_standard_persistent.ipynb
-      - vscolab_ai.ipynb
-      - vscolab_ai_persistent.ipynb
+      - scripts/**
+      - lib/**
+      - tools/sync_notebooks.py
+      - notebooks/**
       - .github/workflows/sync-notebooks.yml
 
 jobs:
@@ -43,7 +30,7 @@ jobs:
           python-version: "3.12"
 
       - name: Check notebooks
-        run: python sync_notebooks.py --check
+        run: python tools/sync_notebooks.py --check
 
   sync:
     if: github.event_name == 'push'
@@ -58,10 +45,10 @@ jobs:
           python-version: "3.12"
 
       - name: Sync notebooks
-        run: python sync_notebooks.py
+        run: python tools/sync_notebooks.py
 
       - name: Commit synced notebooks
         uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5
         with:
           commit_message: Sync notebooks from .py sources
-          file_pattern: "*.ipynb"
+          file_pattern: notebooks/*.ipynb
