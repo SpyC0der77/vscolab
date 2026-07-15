@@ -12,11 +12,7 @@ INLINE_MODULES = [
         "colab_lm_bridge.py",
     ),
     (
-        "from extensions_install import install_extensions\n",
-        "extensions_install.py",
-    ),
-    (
-        "from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url\n",
+        "from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web\n",
         "vscode_bootstrap.py",
     ),
 ]

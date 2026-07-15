@@ -1,8 +1,8 @@
-"""Google Drive persistence + official VS Code serve-web bootstrap for vscolab.
+"""Google Drive persistence + official VS Code tunnel bootstrap for vscolab.
 
 Syncs the workspace with ``MyDrive/vscolab/`` on Drive.
 Load: pull once (Drive -> workspace). Runtime: push-only background sync.
-Pre-installs extensions from ``EXTENSIONS`` (marketplace IDs and/or VSIX).
+Tunnel credentials live under Drive ``data/cli`` so login can persist across sessions.
 """
 
 import subprocess
@@ -10,9 +10,8 @@ import threading
 import time
 from pathlib import Path
 
-from extensions_install import install_extensions
-from google.colab import drive, output
-from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url
+from google.colab import drive
+from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web
 
 SYNC_INTERVAL = 5
 DRIVE_STORE = Path("/content/drive/MyDrive/vscolab")
@@ -28,9 +27,8 @@ venv/
 .git/
 """
 
-PORT = 3000
+PORT = 3000  # unused with tunnels
 GIT_REPO = ""
-# Pin a commit hash to freeze the VS Code build, or leave empty for latest stable.
 COMMIT = ""
 EXTENSIONS = [
     # Marketplace IDs (Microsoft Marketplace):
@@ -38,6 +36,7 @@ EXTENSIONS = [
     # VSIX from URL:
     # {"vsix": "name.vsix", "url": "https://..."},
 ]
+TUNNEL_NAME = "vscolab"
 
 
 class Persistence:
@@ -143,16 +142,17 @@ if GIT_REPO and not folder.exists():
     p.push()
 
 prepared = prepare_vscode(p.cache_dir, p.data_dir, COMMIT)
-install_extensions(prepared["server_bin"], EXTENSIONS, p.data_dir, p.cache_dir)
+login_vscode(prepared)
 
 p.push()
 p.start_push_loop()
 
 folder = str(folder.resolve())
-start_vscode_web(prepared, folder, PORT)
+url = start_vscode_web(
+    prepared,
+    folder,
+    tunnel_name=TUNNEL_NAME,
+    extensions=EXTENSIONS,
+)
 print(f"Drive storage: {p.drive_store}", flush=True)
-
-# CELL 2
-proxy = output.eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
-url = vscode_proxy_url(proxy, folder)
 print(f"Open VS Code: {url}", flush=True)

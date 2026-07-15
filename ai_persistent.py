@@ -1,7 +1,6 @@
-"""Google Drive persistence + official VS Code serve-web for vscolab AI tier.
+"""Google Drive persistence + official VS Code tunnel for vscolab AI tier.
 
 Syncs the workspace with ``MyDrive/vscolab/`` on Drive.
-Load: pull once (Drive -> workspace). Runtime: push-only background sync.
 Pre-installs the Colab AI LM provider and starts the Colab AI bridge.
 """
 
@@ -11,9 +10,8 @@ import time
 from pathlib import Path
 
 from colab_lm_bridge import setup_colab_lm
-from extensions_install import install_extensions
-from google.colab import drive, output
-from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url
+from google.colab import drive
+from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web
 
 SYNC_INTERVAL = 5
 DRIVE_STORE = Path("/content/drive/MyDrive/vscolab")
@@ -29,18 +27,17 @@ venv/
 .git/
 """
 
-PORT = 3000
+PORT = 3000  # unused with tunnels
 GIT_REPO = ""
-# Pin a commit hash to freeze the VS Code build, or leave empty for latest stable.
 COMMIT = ""
 VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
-    # Copilot Chat ships built-in with official VS Code web — do not marketplace-install it.
     {
         "vsix": "colab-lm-0.1.0.vsix",
         "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.1.0.vsix",
     },
 ]
+TUNNEL_NAME = "vscolab-ai"
 
 
 class Persistence:
@@ -146,17 +143,19 @@ if GIT_REPO and not folder.exists():
     p.push()
 
 prepared = prepare_vscode(p.cache_dir, p.data_dir, COMMIT)
-install_extensions(prepared["server_bin"], EXTENSIONS, p.data_dir, p.cache_dir)
+login_vscode(prepared)
 
 p.push()
 p.start_push_loop()
 
 folder = str(folder.resolve())
 setup_colab_lm()
-start_vscode_web(prepared, folder, PORT)
+url = start_vscode_web(
+    prepared,
+    folder,
+    tunnel_name=TUNNEL_NAME,
+    extensions=EXTENSIONS,
+)
 print(f"Drive storage: {p.drive_store}", flush=True)
-
-# CELL 2
-proxy = output.eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
-url = vscode_proxy_url(proxy, folder)
 print(f"Open VS Code: {url}", flush=True)
+print("Colab AI bridge is on http://127.0.0.1:8787 (reachable from the remote tunnel).", flush=True)

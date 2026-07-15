@@ -1,18 +1,14 @@
-import subprocess
 from pathlib import Path
 
 from colab_lm_bridge import setup_colab_lm
-from extensions_install import install_extensions
-from google.colab.output import eval_js
-from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url
+from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web
 
-PORT = 3000
+PORT = 3000  # unused with tunnels; kept for notebook compatibility
 GIT_REPO = ""
-# Pin a commit hash to freeze the VS Code build, or leave empty for latest stable.
 COMMIT = ""
 VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
-    # Copilot Chat ships built-in with official VS Code web — do not marketplace-install it.
+    # Copilot Chat ships with official VS Code — do not marketplace-install it.
     {
         "vsix": "colab-lm-0.1.0.vsix",
         "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.1.0.vsix",
@@ -20,9 +16,12 @@ EXTENSIONS = [
 ]
 CACHE_DIR = Path("/content/vscode-cache")
 USER_DATA_DIR = Path("/content/.vscode-server-data")
+TUNNEL_NAME = "vscolab-ai"
 
 folder = Path("/content/workspace")
 if GIT_REPO:
+    import subprocess
+
     name = GIT_REPO.rstrip("/").removesuffix(".git").split("/")[-1]
     folder = Path(f"/content/{name}")
     if not folder.exists():
@@ -35,11 +34,13 @@ else:
 
 folder = str(folder.resolve())
 prepared = prepare_vscode(CACHE_DIR, USER_DATA_DIR, COMMIT)
-install_extensions(prepared["server_bin"], EXTENSIONS, USER_DATA_DIR, CACHE_DIR)
+login_vscode(prepared)
 setup_colab_lm()
-start_vscode_web(prepared, folder, PORT)
-
-# CELL 2
-proxy = eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
-url = vscode_proxy_url(proxy, folder)
+url = start_vscode_web(
+    prepared,
+    folder,
+    tunnel_name=TUNNEL_NAME,
+    extensions=EXTENSIONS,
+)
 print(f"Open VS Code: {url}", flush=True)
+print("Colab AI bridge is on http://127.0.0.1:8787 (reachable from the remote tunnel).", flush=True)
