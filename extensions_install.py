@@ -29,8 +29,8 @@ def _ensure_vsix(vsix_path: Path, url: str, label: str) -> None:
         )
 
 
-def _ensure_server_settings(user_data_dir: Path) -> None:
-    settings_dir = user_data_dir / "User"
+def _ensure_server_settings(server_data_dir: Path) -> None:
+    settings_dir = server_data_dir / "User"
     settings_dir.mkdir(parents=True, exist_ok=True)
     settings_path = settings_dir / "settings.json"
     settings = {}
@@ -42,14 +42,8 @@ def _ensure_server_settings(user_data_dir: Path) -> None:
     settings_path.write_text(json.dumps(settings, indent=2) + "\n")
 
 
-def _extensions_dir(user_data_dir: Path) -> Path:
-    path = user_data_dir / "extensions"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def _install_vsix_manually(vsix_path: Path, user_data_dir: Path, ext_id: str) -> None:
-    target = _extensions_dir(user_data_dir) / ext_id
+def _install_vsix_manually(vsix_path: Path, server_data_dir: Path, ext_id: str) -> None:
+    target = server_data_dir / "extensions" / ext_id
     if target.exists():
         return
     target.mkdir(parents=True, exist_ok=True)
@@ -64,27 +58,23 @@ def _install_vsix_manually(vsix_path: Path, user_data_dir: Path, ext_id: str) ->
     print(f"Extension extracted to {target}", flush=True)
 
 
-def _cli_base(server_bin: Path, user_data_dir: Path) -> list[str]:
-    return [
-        str(server_bin),
-        "--force",
-        "--accept-server-license-terms",
-        "--user-data-dir",
-        str(user_data_dir),
-        "--extensions-dir",
-        str(_extensions_dir(user_data_dir)),
-    ]
-
-
-def _install_marketplace(server_bin: Path, ext_id: str, user_data_dir: Path) -> None:
-    ext_dir = _extensions_dir(user_data_dir)
+def _install_marketplace(server_bin: Path, ext_id: str, server_data_dir: Path) -> None:
+    ext_dir = server_data_dir / "extensions"
     if any(ext_dir.glob(f"{ext_id}*")):
         print(f"{ext_id} already installed", flush=True)
         return
 
     print(f"Installing {ext_id}...", flush=True)
     result = subprocess.run(
-        [*_cli_base(server_bin, user_data_dir), "--install-extension", ext_id],
+        [
+            str(server_bin),
+            "--install-extension",
+            ext_id,
+            "--force",
+            "--accept-server-license-terms",
+            "--server-data-dir",
+            str(server_data_dir),
+        ],
         capture_output=True,
         text=True,
     )
@@ -99,17 +89,25 @@ def _install_marketplace(server_bin: Path, ext_id: str, user_data_dir: Path) -> 
 def _install_vsix(
     server_bin: Path,
     vsix_path: Path,
-    user_data_dir: Path,
+    server_data_dir: Path,
     ext_id: str,
 ) -> None:
-    ext_dir = _extensions_dir(user_data_dir) / ext_id
+    ext_dir = server_data_dir / "extensions" / ext_id
     if ext_dir.exists():
         print(f"{ext_id} already installed at {ext_dir}", flush=True)
         return
 
     print(f"Installing {ext_id}...", flush=True)
     result = subprocess.run(
-        [*_cli_base(server_bin, user_data_dir), "--install-extension", str(vsix_path)],
+        [
+            str(server_bin),
+            "--install-extension",
+            str(vsix_path),
+            "--force",
+            "--accept-server-license-terms",
+            "--server-data-dir",
+            str(server_data_dir),
+        ],
         capture_output=True,
         text=True,
     )
@@ -122,27 +120,26 @@ def _install_vsix(
         return
 
     print("CLI install failed, extracting VSIX manually...", flush=True)
-    _install_vsix_manually(vsix_path, user_data_dir, ext_id)
-    if not (_extensions_dir(user_data_dir) / ext_id).exists():
+    _install_vsix_manually(vsix_path, server_data_dir, ext_id)
+    if not ext_dir.exists():
         raise RuntimeError(f"Failed to install extension {ext_id}.")
 
 
 def install_extensions(
     server_bin: Path,
     extensions: list,
-    user_data_dir: Path,
+    server_data_dir: Path,
     cache_dir: Path,
 ) -> None:
-    user_data_dir = Path(user_data_dir)
-    user_data_dir.mkdir(parents=True, exist_ok=True)
-    _ensure_server_settings(user_data_dir)
+    server_data_dir.mkdir(parents=True, exist_ok=True)
+    _ensure_server_settings(server_data_dir)
 
     if not extensions:
         return
 
     for ext in extensions:
         if isinstance(ext, str):
-            _install_marketplace(server_bin, ext, user_data_dir)
+            _install_marketplace(server_bin, ext, server_data_dir)
             continue
 
         vsix = ext["vsix"]
@@ -160,4 +157,4 @@ def install_extensions(
             raise FileNotFoundError(f"VSIX not found: {vsix_path}")
 
         ext_id = ext.get("id") or _extension_id_from_vsix(vsix_path)
-        _install_vsix(server_bin, vsix_path, user_data_dir, ext_id)
+        _install_vsix(server_bin, vsix_path, server_data_dir, ext_id)

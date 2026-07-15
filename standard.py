@@ -1,24 +1,36 @@
+import subprocess
+import time
 from pathlib import Path
 
-from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web
+from extensions_install import install_extensions
 
-PORT = 3000  # unused with tunnels; kept for notebook compatibility
+VERSION = "openvscode-server-v1.109.5"
+PORT = 3000
 GIT_REPO = ""
-COMMIT = ""
 EXTENSIONS = [
-    # Marketplace IDs (Microsoft Marketplace):
+    # Marketplace IDs:
     # "ms-python.python",
     # VSIX from URL:
     # {"vsix": "name.vsix", "url": "https://..."},
 ]
-CACHE_DIR = Path("/content/vscode-cache")
-USER_DATA_DIR = Path("/content/.vscode-server-data")
-TUNNEL_NAME = "vscolab"
+SERVER_DATA_DIR = Path("/content/.openvscode-server-data")
+VSIX_CACHE_DIR = Path("/content")
+
+url = f"https://github.com/gitpod-io/openvscode-server/releases/download/{VERSION}/{VERSION}-linux-x64.tar.gz"
+tarball = f"{VERSION}-linux-x64.tar.gz"
+
+print("Downloading openvscode-server...", flush=True)
+subprocess.run(["wget", "--show-progress", "-O", tarball, url], check=True)
+
+print("Extracting...", flush=True)
+subprocess.run(["tar", "-xzf", tarball], check=True)
+
+local_server = Path(f"/content/{VERSION}-linux-x64")
+server_bin = local_server / "bin/openvscode-server"
+install_extensions(server_bin, EXTENSIONS, SERVER_DATA_DIR, VSIX_CACHE_DIR)
 
 folder = Path("/content/workspace")
 if GIT_REPO:
-    import subprocess
-
     name = GIT_REPO.rstrip("/").removesuffix(".git").split("/")[-1]
     folder = Path(f"/content/{name}")
     if not folder.exists():
@@ -30,12 +42,23 @@ else:
     folder.mkdir(parents=True, exist_ok=True)
 
 folder = str(folder.resolve())
-prepared = prepare_vscode(CACHE_DIR, USER_DATA_DIR, COMMIT)
-login_vscode(prepared)
-url = start_vscode_web(
-    prepared,
-    folder,
-    tunnel_name=TUNNEL_NAME,
-    extensions=EXTENSIONS,
-)
+
+print(f"Starting openvscode-server (default folder: {folder})...", flush=True)
+subprocess.Popen([
+    str(server_bin),
+    "--host", "0.0.0.0",
+    "--port", str(PORT),
+    "--without-connection-token",
+    "--disable-workspace-trust",
+    "--accept-server-license-terms",
+    "--server-data-dir", str(SERVER_DATA_DIR),
+    "--default-folder", folder,
+])
+time.sleep(5)
+print(f"openvscode-server running on port {PORT} — {folder}", flush=True)
+
+# CELL 2
+from google.colab.output import eval_js
+
+url = eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
 print(f"Open VS Code: {url}", flush=True)
