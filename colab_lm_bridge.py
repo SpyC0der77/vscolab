@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import subprocess
 import threading
+import time
 import traceback
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -17,7 +18,13 @@ from urllib.parse import urlparse
 
 BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 8787
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODELS = [
+    "gemini-3.5-flash",
+    "gemini-3.1-pro",
+    "gemini-3.0-flash",
+    "gemini-2.5-flash",
+]
+DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 _server: ThreadingHTTPServer | None = None
 
@@ -49,15 +56,23 @@ def _free_port(port: int) -> None:
 
 
 def _list_models() -> list[str]:
+    discovered: list[str] = []
     try:
         from google.colab import ai
 
-        models = list(ai.list_models())
-        if models:
-            return [str(m) for m in models]
+        discovered = [str(m) for m in ai.list_models()]
     except Exception as exc:
-        print(f"colab_lm_bridge: list_models failed ({exc}); using default", flush=True)
-    return [DEFAULT_MODEL]
+        print(f"colab_lm_bridge: list_models failed ({exc}); using defaults", flush=True)
+
+    # Always surface the curated Gemini models, then any extras from Colab.
+    seen: set[str] = set()
+    models: list[str] = []
+    for mid in [*DEFAULT_MODELS, *discovered]:
+        if mid in seen:
+            continue
+        seen.add(mid)
+        models.append(mid)
+    return models or list(DEFAULT_MODELS)
 
 
 def _generate(prompt: str, model: str | None, stream: bool) -> str | Iterator[str]:
@@ -65,7 +80,13 @@ def _generate(prompt: str, model: str | None, stream: bool) -> str | Iterator[st
 
     kwargs: dict[str, Any] = {"stream": stream}
     if model:
-        kwargs["model"] = model
+        # Colab has used both names across versions; prefer model_name (current runtime).
+        try:
+            return ai.generate_text(prompt, model_name=model, **kwargs)
+        except TypeError as exc:
+            if "model_name" not in str(exc) and "unexpected keyword" not in str(exc):
+                raise
+            return ai.generate_text(prompt, model=model, **kwargs)
     return ai.generate_text(prompt, **kwargs)
 
 
@@ -173,18 +194,13 @@ class _BridgeHandler(BaseHTTPRequestHandler):
 
 
 def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
-    """Start the Colab AI bridge and return its base URL."""
+    """Start the Colab AI bridge and return its base URL.
+
+    Always (re)starts the server so notebook re-runs pick up bridge code changes.
+    """
     global _server
 
     url = f"http://{host}:{port}"
-
-    if _server is not None:
-        return url
-
-    # Re-running the notebook cell resets globals but leaves the old server bound.
-    if _bridge_healthy(host, port):
-        print(f"Colab AI bridge already running at {url}", flush=True)
-        return url
 
     try:
         from google.colab import ai  # noqa: F401
@@ -193,6 +209,19 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
             "google.colab.ai is only available inside Google Colab."
         ) from exc
 
+    if _server is not None:
+        try:
+            _server.shutdown()
+            _server.server_close()
+        except Exception:
+            pass
+        _server = None
+
+    if _bridge_healthy(host, port):
+        print(f"Port {port} still in use; freeing previous bridge...", flush=True)
+        _free_port(port)
+        time.sleep(0.5)
+
     try:
         _server = _ReuseHTTPServer((host, port), _BridgeHandler)
     except OSError as exc:
@@ -200,9 +229,7 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
             raise
         print(f"Port {port} busy; trying to free it...", flush=True)
         _free_port(port)
-        if _bridge_healthy(host, port):
-            print(f"Colab AI bridge already running at {url}", flush=True)
-            return url
+        time.sleep(0.5)
         _server = _ReuseHTTPServer((host, port), _BridgeHandler)
 
     thread = threading.Thread(target=_server.serve_forever, daemon=True)

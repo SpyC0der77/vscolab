@@ -5,6 +5,9 @@ const DEFAULT_MAX_INPUT = 1_000_000;
 const DEFAULT_MAX_OUTPUT = 8192;
 
 const FALLBACK_MODELS = [
+  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
+  { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
+  { id: "gemini-3.0-flash", name: "Gemini 3.0 Flash" },
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
 ];
 
