@@ -52,12 +52,20 @@ export class BridgeClient {
     model: string,
     signal?: AbortSignal,
   ): AsyncGenerator<string> {
-    const res = await fetch(`${this.baseUrl}/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, model, stream: true }),
-      signal,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages, model, stream: true }),
+        signal,
+      });
+    } catch (err) {
+      if (signal?.aborted) {
+        return;
+      }
+      throw err;
+    }
 
     if (!res.ok) {
       const text = await res.text();
@@ -72,26 +80,33 @@ export class BridgeClient {
     const decoder = new TextDecoder();
     let buffer = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          continue;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
         }
-        const chunk = JSON.parse(trimmed) as { text?: string };
-        if (chunk.text) {
-          yield chunk.text;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            continue;
+          }
+          const chunk = JSON.parse(trimmed) as { text?: string };
+          if (chunk.text) {
+            yield chunk.text;
+          }
         }
       }
+    } catch (err) {
+      if (signal?.aborted) {
+        return;
+      }
+      throw err;
     }
 
     const tail = buffer.trim();

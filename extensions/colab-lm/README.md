@@ -11,4 +11,4 @@ bun run compile
 bun run package
 ```
 
-The packaged VSIX is committed at `colab-lm-0.1.0.vsix` for pre-install in the AI tier notebooks.
+The packaged VSIX is committed at `colab-lm-0.2.0.vsix` for pre-install in the AI tier notebooks.

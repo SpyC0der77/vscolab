@@ -1,5 +1,10 @@
 import * as vscode from "vscode";
 import { BridgeClient, type BridgeMessage } from "./bridgeClient";
+import {
+  contentPartToText,
+  formatToolsPrompt,
+  parseToolCalls,
+} from "./tools";
 
 const DEFAULT_MAX_INPUT = 1_000_000;
 const DEFAULT_MAX_OUTPUT = 8192;
@@ -19,19 +24,37 @@ function getBridgeClient(): BridgeClient {
 
 function toBridgeMessages(
   messages: readonly vscode.LanguageModelChatRequestMessage[],
+  tools?: readonly vscode.LanguageModelChatTool[],
+  toolMode?: vscode.LanguageModelChatToolMode,
 ): BridgeMessage[] {
-  return messages.map((message) => ({
-    role:
-      message.role === vscode.LanguageModelChatMessageRole.Assistant
-        ? "assistant"
-        : "user",
-    content: message.content
-      .filter((part): part is vscode.LanguageModelTextPart =>
-        part instanceof vscode.LanguageModelTextPart,
-      )
-      .map((part) => part.value)
-      .join(""),
-  }));
+  const bridgeMessages: BridgeMessage[] = messages
+    .map((message) => {
+      const content = message.content
+        .map(contentPartToText)
+        .filter(Boolean)
+        .join("\n");
+      if (!content.trim()) {
+        return null;
+      }
+      return {
+        role:
+          message.role === vscode.LanguageModelChatMessageRole.Assistant
+            ? ("assistant" as const)
+            : ("user" as const),
+        content,
+      };
+    })
+    .filter((message): message is BridgeMessage => message !== null);
+
+  if (tools && tools.length > 0) {
+    const mode = toolMode ?? vscode.LanguageModelChatToolMode.Auto;
+    bridgeMessages.unshift({
+      role: "user",
+      content: formatToolsPrompt(tools, mode),
+    });
+  }
+
+  return bridgeMessages;
 }
 
 function toModelInfo(model: { id: string; name: string }): vscode.LanguageModelChatInformation {
@@ -61,12 +84,18 @@ function textLength(
   if (typeof text === "string") {
     return text.length;
   }
-  return text.content
-    .filter((part): part is vscode.LanguageModelTextPart =>
-      part instanceof vscode.LanguageModelTextPart,
-    )
-    .map((part) => part.value)
-    .join("").length;
+  return text.content.map(contentPartToText).join("").length;
+}
+
+function isAbortError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  return (
+    err.name === "AbortError" ||
+    err.message === "terminated" ||
+    err.message.includes("aborted")
+  );
 }
 
 export class ColabChatModelProvider implements vscode.LanguageModelChatProvider {
@@ -91,7 +120,7 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
   async provideLanguageModelChatResponse(
     model: vscode.LanguageModelChatInformation,
     messages: readonly vscode.LanguageModelChatRequestMessage[],
-    _options: vscode.ProvideLanguageModelChatResponseOptions,
+    options: vscode.ProvideLanguageModelChatResponseOptions,
     progress: vscode.Progress<vscode.LanguageModelResponsePart>,
     token: vscode.CancellationToken,
   ): Promise<void> {
@@ -103,11 +132,28 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
       );
     }
 
-    const bridgeMessages = toBridgeMessages(messages);
+    const tools = options.tools ?? [];
+    const bridgeMessages = toBridgeMessages(messages, tools, options.toolMode);
     const abort = new AbortController();
-
     const dispose = token.onCancellationRequested(() => abort.abort());
+
     try {
+      if (tools.length === 0) {
+        for await (const chunk of client.generate(
+          bridgeMessages,
+          model.id,
+          abort.signal,
+        )) {
+          if (token.isCancellationRequested) {
+            return;
+          }
+          progress.report(new vscode.LanguageModelTextPart(chunk));
+        }
+        return;
+      }
+
+      // Tool-enabled turns: buffer so we can parse <tool_call> blocks reliably.
+      let full = "";
       for await (const chunk of client.generate(
         bridgeMessages,
         model.id,
@@ -116,8 +162,28 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
         if (token.isCancellationRequested) {
           return;
         }
-        progress.report(new vscode.LanguageModelTextPart(chunk));
+        full += chunk;
       }
+
+      const { text, toolCalls } = parseToolCalls(full);
+      if (text) {
+        progress.report(new vscode.LanguageModelTextPart(text));
+      }
+      for (const call of toolCalls) {
+        progress.report(
+          new vscode.LanguageModelToolCallPart(call.callId, call.name, call.input),
+        );
+      }
+    } catch (err) {
+      if (token.isCancellationRequested || abort.signal.aborted) {
+        return;
+      }
+      if (isAbortError(err)) {
+        throw new Error(
+          "Colab AI bridge connection closed while generating. Check that the notebook cell is still running.",
+        );
+      }
+      throw err;
     } finally {
       dispose.dispose();
     }

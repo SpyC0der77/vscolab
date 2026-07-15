@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
@@ -96,6 +97,18 @@ def _install_vsix(
     if ext_dir.exists():
         print(f"{ext_id} already installed at {ext_dir}", flush=True)
         return
+
+    # Drop older builds of the same extension so updates take effect.
+    with zipfile.ZipFile(vsix_path) as zf:
+        meta = json.loads(zf.read("extension/package.json"))
+    base = f"{meta['publisher']}.{meta['name']}"
+    ext_root = server_data_dir / "extensions"
+    if ext_root.exists():
+        for old in ext_root.glob(f"{base}-*"):
+            if old.name == ext_id:
+                continue
+            print(f"Removing older extension {old.name}", flush=True)
+            shutil.rmtree(old, ignore_errors=True)
 
     print(f"Installing {ext_id}...", flush=True)
     result = subprocess.run(
