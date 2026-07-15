@@ -1,0 +1,45 @@
+{
+  "name": "colab-lm",
+  "publisher": "vscolab",
+  "displayName": "Colab AI",
+  "description": "Language Model Chat Provider backed by google.colab.ai in Google Colab.",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languageModelChatProviders": [
+      {
+        "vendor": "colab",
+        "displayName": "Colab AI"
+      }
+    ],
+    "configuration": {
+      "title": "Colab AI",
+      "properties": {
+        "colabLm.bridgeUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8787",
+          "description": "Base URL of the Colab AI bridge started by the vscolab AI notebook."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "bunx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/vscode": "^1.104.0",
+    "@vscode/vsce": "^3.2.1",
+    "typescript": "^5.9.2"
+  }
+}

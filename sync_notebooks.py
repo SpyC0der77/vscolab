@@ -8,6 +8,10 @@ ROOT = Path(__file__).parent
 # Imported helpers that must be inlined into notebook cells, in order.
 INLINE_MODULES = [
     (
+        "from colab_lm_bridge import setup_colab_lm\n",
+        "colab_lm_bridge.py",
+    ),
+    (
         "from extensions_install import install_extensions\n",
         "extensions_install.py",
     ),
@@ -17,6 +21,8 @@ PAIRINGS = [
     ("lite.py", "vscolab_lite.ipynb"),
     ("standard.py", "vscolab_standard.ipynb"),
     ("standard_persistent.py", "vscolab_standard_persistent.ipynb"),
+    ("ai.py", "vscolab_ai.ipynb"),
+    ("ai_persistent.py", "vscolab_ai_persistent.ipynb"),
 ]
 
 

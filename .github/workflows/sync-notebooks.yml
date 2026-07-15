@@ -7,6 +7,9 @@ on:
       - lite.py
       - standard.py
       - standard_persistent.py
+      - ai.py
+      - ai_persistent.py
+      - colab_lm_bridge.py
       - extensions_install.py
       - sync_notebooks.py
       - .github/workflows/sync-notebooks.yml
@@ -15,11 +18,16 @@ on:
       - lite.py
       - standard.py
       - standard_persistent.py
+      - ai.py
+      - ai_persistent.py
+      - colab_lm_bridge.py
       - extensions_install.py
       - sync_notebooks.py
       - vscolab_lite.ipynb
       - vscolab_standard.ipynb
       - vscolab_standard_persistent.ipynb
+      - vscolab_ai.ipynb
+      - vscolab_ai_persistent.ipynb
       - .github/workflows/sync-notebooks.yml
 
 jobs:

@@ -9,6 +9,7 @@ Run [openvscode-server](https://github.com/gitpod-io/openvscode-server) inside [
 | ------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Lite**     | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_lite.ipynb)        | —                                                                                                                                           |
 | **Standard** | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_standard.ipynb)    | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_standard_persistent.ipynb)                  |
+| **AI**       | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_ai.ipynb)          | [Open In Colab](https://colab.research.google.com/github/SpyC0der77/vscolab/blob/master/vscolab_ai_persistent.ipynb)                      |
 
 
 1. Open a notebook in Colab.
@@ -30,7 +31,10 @@ Download / cache openvscode-server tarball
 (Optional) git clone → workspace folder
        │
        ▼
-(Optional) install extensions from ``EXTENSIONS``  ← Standard variants
+(Optional) install extensions from ``EXTENSIONS``  ← Standard / AI variants
+       │
+       ▼
+(Optional) start Colab AI bridge  ← AI variants
        │
        ▼
 Start openvscode-server (--default-folder; optional --server-data-dir)
@@ -73,6 +77,20 @@ MyDrive/vscolab/
 
 The openvscode-server tarball and VS Code user data are cached under `cache/` and `data/` on Drive so subsequent sessions skip re-downloading and preserve extensions.
 
+### AI (`vscolab_ai.ipynb` / `ai.py`)
+
+Replaces the former Studio tier. Everything in Standard, plus:
+
+- Pre-installs the **Colab AI** Language Model Chat Provider extension (`vscolab.colab-lm`).
+- Starts a localhost bridge (`colab_lm_bridge.py`) that wraps `google.colab.ai` — no API key required.
+- VS Code Chat can use Colab Gemini models via the model picker (vendor: **Colab AI**).
+
+Available models and quotas depend on your Colab plan and `google.colab.ai` entitlements.
+
+### AI Persistent (`vscolab_ai_persistent.ipynb` / `ai_persistent.py`)
+
+AI tier with the same Google Drive persistence as Standard Persistent.
+
 ## Configuration
 
 Edit the constants at the top of the notebook (or script):
@@ -83,7 +101,7 @@ Edit the constants at the top of the notebook (or script):
 | `VERSION`       | `openvscode-server-v1.109.5`              | Server release to download                                |
 | `PORT`          | `3000`                                    | Port for the Colab proxy URL                              |
 | `GIT_REPO`      | `""`                                      | Repo to clone as workspace; uses `/content/workspace` when empty |
-| `EXTENSIONS`    | `[]`                                      | Extensions to pre-install (Standard only)                 |
+| `EXTENSIONS`    | `[]`                                      | Extensions to pre-install (Standard / AI only)            |
 | `SYNC_INTERVAL` | `5`                                       | Seconds between Drive pushes (persistent only)            |
 
 
@@ -114,9 +132,16 @@ vscolab/
 ├── vscolab_lite.ipynb                 # Lite Colab notebook (launch only)
 ├── vscolab_standard.ipynb             # Standard Colab notebook
 ├── vscolab_standard_persistent.ipynb  # Standard + Drive sync
+├── vscolab_ai.ipynb                   # AI tier (Colab Gemini via LM provider)
+├── vscolab_ai_persistent.ipynb        # AI tier + Drive sync
 ├── lite.py                            # Script source for Lite notebook
 ├── standard.py                        # Script source for Standard notebook
 ├── standard_persistent.py             # Script source for Standard Persistent
+├── ai.py                              # Script source for AI notebook
+├── ai_persistent.py                   # Script source for AI Persistent
+├── colab_lm_bridge.py                 # Colab AI HTTP bridge for the extension
+├── extensions/
+│   └── colab-lm/                      # Language Model Chat Provider extension
 ├── extensions_install.py              # Shared extension install helpers
 └── sync_notebooks.py                  # Regenerate .ipynb from .py sources
 ```
@@ -134,6 +159,7 @@ The `.py` files mirror the notebook cells and are useful for local editing or di
 - Colab VMs are ephemeral; without the persistent notebook, all local changes are lost on disconnect.
 - Background sync is push-only after the initial pull — edits made directly on Drive while a session is running may be overwritten on the next push.
 - Large folders (e.g. `node_modules`, `.git`) should stay in `.vscolabignore` to avoid slow syncs and Drive quota use.
+- Colab AI models are subject to Google Colab plan limits and may change without notice.
 - `--without-connection-token` is used for Colab proxy access; do not expose the server outside a trusted Colab session.
 
 ## License
