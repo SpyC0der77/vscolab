@@ -1,22 +1,19 @@
-import subprocess
-import time
 from pathlib import Path
 
-VERSION = "openvscode-server-v1.109.5"
+from google.colab.output import eval_js
+from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url
+
 PORT = 3000
 GIT_REPO = ""
-
-url = f"https://github.com/gitpod-io/openvscode-server/releases/download/{VERSION}/{VERSION}-linux-x64.tar.gz"
-tarball = f"{VERSION}-linux-x64.tar.gz"
-
-print("Downloading openvscode-server...", flush=True)
-subprocess.run(["wget", "--show-progress", "-O", tarball, url], check=True)
-
-print("Extracting...", flush=True)
-subprocess.run(["tar", "-xzf", tarball], check=True)
+# Pin a commit hash to freeze the VS Code build, or leave empty for latest stable.
+COMMIT = ""
+CACHE_DIR = Path("/content/vscode-cache")
+USER_DATA_DIR = Path("/content/.vscode-server-data")
 
 folder = Path("/content/workspace")
 if GIT_REPO:
+    import subprocess
+
     name = GIT_REPO.rstrip("/").removesuffix(".git").split("/")[-1]
     folder = Path(f"/content/{name}")
     if not folder.exists():
@@ -28,23 +25,10 @@ else:
     folder.mkdir(parents=True, exist_ok=True)
 
 folder = str(folder.resolve())
-
-server_bin = Path(f"/content/{VERSION}-linux-x64/bin/openvscode-server")
-
-print(f"Starting openvscode-server (default folder: {folder})...", flush=True)
-subprocess.Popen([
-    str(server_bin),
-    "--host", "0.0.0.0",
-    "--port", str(PORT),
-    "--without-connection-token",
-    "--disable-workspace-trust",
-    "--default-folder", folder,
-])
-time.sleep(5)
-print(f"openvscode-server running on port {PORT} — {folder}", flush=True)
+prepared = prepare_vscode(CACHE_DIR, USER_DATA_DIR, COMMIT)
+start_vscode_web(prepared, folder, PORT)
 
 # CELL 2
-from google.colab.output import eval_js
-
-url = eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
+proxy = eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
+url = vscode_proxy_url(proxy, folder)
 print(f"Open VS Code: {url}", flush=True)

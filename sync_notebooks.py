@@ -15,6 +15,10 @@ INLINE_MODULES = [
         "from extensions_install import install_extensions\n",
         "extensions_install.py",
     ),
+    (
+        "from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url\n",
+        "vscode_bootstrap.py",
+    ),
 ]
 
 PAIRINGS = [

@@ -1,6 +1,6 @@
-"""Google Drive persistence + openvscode-server bootstrap for vscolab.
+"""Google Drive persistence + official VS Code serve-web bootstrap for vscolab.
 
-Syncs the VS Code ``--default-folder`` path with ``MyDrive/vscolab/`` on Drive.
+Syncs the workspace with ``MyDrive/vscolab/`` on Drive.
 Load: pull once (Drive -> workspace). Runtime: push-only background sync.
 Pre-installs extensions from ``EXTENSIONS`` (marketplace IDs and/or VSIX).
 """
@@ -12,6 +12,7 @@ from pathlib import Path
 
 from extensions_install import install_extensions
 from google.colab import drive, output
+from vscode_bootstrap import prepare_vscode, start_vscode_web, vscode_proxy_url
 
 SYNC_INTERVAL = 5
 DRIVE_STORE = Path("/content/drive/MyDrive/vscolab")
@@ -27,11 +28,12 @@ venv/
 .git/
 """
 
-VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
 GIT_REPO = ""
+# Pin a commit hash to freeze the VS Code build, or leave empty for latest stable.
+COMMIT = ""
 EXTENSIONS = [
-    # Marketplace IDs:
+    # Marketplace IDs (Microsoft Marketplace):
     # "ms-python.python",
     # VSIX from URL:
     # {"vsix": "name.vsix", "url": "https://..."},
@@ -140,46 +142,17 @@ if GIT_REPO and not folder.exists():
     subprocess.run(["git", "clone", "--progress", GIT_REPO, str(folder)], check=True)
     p.push()
 
-url = f"https://github.com/gitpod-io/openvscode-server/releases/download/{VERSION}/{VERSION}-linux-x64.tar.gz"
-tarball = f"{VERSION}-linux-x64.tar.gz"
-tarball_path = p.cache_dir / tarball
-local_server = Path(f"/content/{VERSION}-linux-x64")
-server_bin = local_server / "bin/openvscode-server"
-
-if not tarball_path.exists():
-    print("Downloading openvscode-server...", flush=True)
-    subprocess.run(["wget", "--show-progress", "-O", str(tarball_path), url], check=True)
-else:
-    print(f"Using cached tarball at {tarball_path}", flush=True)
-
-if not local_server.exists():
-    print("Extracting...", flush=True)
-    subprocess.run(["tar", "-xzf", str(tarball_path), "-C", "/content"], check=True)
-else:
-    print(f"Using extracted server at {local_server}", flush=True)
-
-install_extensions(server_bin, EXTENSIONS, p.data_dir, p.cache_dir)
+prepared = prepare_vscode(p.cache_dir, p.data_dir, COMMIT)
+install_extensions(prepared["server_bin"], EXTENSIONS, p.data_dir, p.cache_dir)
 
 p.push()
 p.start_push_loop()
 
 folder = str(folder.resolve())
-
-print(f"Starting openvscode-server (default folder: {folder})...", flush=True)
-subprocess.Popen([
-    str(server_bin),
-    "--host", "0.0.0.0",
-    "--port", str(PORT),
-    "--without-connection-token",
-    "--disable-workspace-trust",
-    "--accept-server-license-terms",
-    "--server-data-dir", str(p.data_dir),
-    "--default-folder", folder,
-])
-time.sleep(5)
-print(f"openvscode-server running on port {PORT} — {folder}", flush=True)
+start_vscode_web(prepared, folder, PORT)
 print(f"Drive storage: {p.drive_store}", flush=True)
 
 # CELL 2
-url = output.eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
+proxy = output.eval_js(f'google.colab.kernel.proxyPort({PORT}, {{"cache": false}})')
+url = vscode_proxy_url(proxy, folder)
 print(f"Open VS Code: {url}", flush=True)
