@@ -7,8 +7,10 @@ extension (running in openvscode-server) can call Gemini without an API key.
 from __future__ import annotations
 
 import json
+import subprocess
 import threading
 import traceback
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Iterator
 from urllib.parse import urlparse
@@ -18,6 +20,32 @@ BRIDGE_PORT = 8787
 DEFAULT_MODEL = "gemini-2.5-flash"
 
 _server: ThreadingHTTPServer | None = None
+
+
+class _ReuseHTTPServer(ThreadingHTTPServer):
+    allow_reuse_address = True
+
+
+def _bridge_healthy(host: str, port: int) -> bool:
+    try:
+        with urllib.request.urlopen(f"http://{host}:{port}/health", timeout=1) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def _free_port(port: int) -> None:
+    """Best-effort kill of whatever is bound to ``port`` (previous cell run)."""
+    for cmd in (
+        ["fuser", "-k", f"{port}/tcp"],
+        ["bash", "-lc", f"lsof -ti tcp:{port} | xargs -r kill -9"],
+    ):
+        try:
+            subprocess.run(cmd, capture_output=True, check=False, timeout=5)
+            return
+        except Exception:
+            continue
+
 
 
 def _list_models() -> list[str]:
@@ -148,8 +176,15 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
     """Start the Colab AI bridge and return its base URL."""
     global _server
 
+    url = f"http://{host}:{port}"
+
     if _server is not None:
-        return f"http://{host}:{port}"
+        return url
+
+    # Re-running the notebook cell resets globals but leaves the old server bound.
+    if _bridge_healthy(host, port):
+        print(f"Colab AI bridge already running at {url}", flush=True)
+        return url
 
     try:
         from google.colab import ai  # noqa: F401
@@ -158,10 +193,20 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
             "google.colab.ai is only available inside Google Colab."
         ) from exc
 
-    _server = ThreadingHTTPServer((host, port), _BridgeHandler)
+    try:
+        _server = _ReuseHTTPServer((host, port), _BridgeHandler)
+    except OSError as exc:
+        if getattr(exc, "errno", None) != 98:  # EADDRINUSE
+            raise
+        print(f"Port {port} busy; trying to free it...", flush=True)
+        _free_port(port)
+        if _bridge_healthy(host, port):
+            print(f"Colab AI bridge already running at {url}", flush=True)
+            return url
+        _server = _ReuseHTTPServer((host, port), _BridgeHandler)
+
     thread = threading.Thread(target=_server.serve_forever, daemon=True)
     thread.start()
 
-    url = f"http://{host}:{port}"
     print(f"Colab AI bridge listening at {url}", flush=True)
     return url
