@@ -4,7 +4,6 @@ on:
   push:
     branches: [master, main]
     paths:
-      - lite.py
       - standard.py
       - standard_persistent.py
       - ai.py
@@ -16,7 +15,6 @@ on:
       - .github/workflows/sync-notebooks.yml
   pull_request:
     paths:
-      - lite.py
       - standard.py
       - standard_persistent.py
       - ai.py
@@ -25,7 +23,6 @@ on:
       - vscode_bootstrap.py
       - extensions_install.py
       - sync_notebooks.py
-      - vscolab_lite.ipynb
       - vscolab_standard.ipynb
       - vscolab_standard_persistent.ipynb
       - vscolab_ai.ipynb

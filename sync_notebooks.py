@@ -22,7 +22,6 @@ INLINE_MODULES = [
 ]
 
 PAIRINGS = [
-    ("lite.py", "vscolab_lite.ipynb"),
     ("standard.py", "vscolab_standard.ipynb"),
     ("standard_persistent.py", "vscolab_standard_persistent.ipynb"),
     ("ai.py", "vscolab_ai.ipynb"),
