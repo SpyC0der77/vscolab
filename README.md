@@ -79,7 +79,7 @@ MyDrive/vscolab/
 
 Everything in Standard, plus:
 
-- Pre-installs **GitHub Copilot Chat** (Microsoft Marketplace) so the Chat model picker works.
+- Official VS Code web already includes **GitHub Copilot Chat** (built-in) — no separate install.
 - Pre-installs the **Colab AI** Language Model Chat Provider (`vscolab.colab-lm`).
 - Starts a localhost bridge (`colab_lm_bridge.py`) that wraps `google.colab.ai` — no API key required.
 - In Chat, pick a **Colab AI** model from the model picker (you may still see a Copilot sign-in prompt for other features; Colab models use your Colab entitlement).

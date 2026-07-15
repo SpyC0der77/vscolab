@@ -2,7 +2,7 @@
 
 Syncs the workspace with ``MyDrive/vscolab/`` on Drive.
 Load: pull once (Drive -> workspace). Runtime: push-only background sync.
-Pre-installs Copilot Chat + Colab AI LM provider and starts the Colab AI bridge.
+Pre-installs the Colab AI LM provider and starts the Colab AI bridge.
 """
 
 import subprocess
@@ -35,8 +35,7 @@ GIT_REPO = ""
 COMMIT = ""
 VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
-    # Official Chat agent (Microsoft Marketplace) — required for the model picker.
-    "GitHub.copilot-chat",
+    # Copilot Chat ships built-in with official VS Code web — do not marketplace-install it.
     {
         "vsix": "colab-lm-0.1.0.vsix",
         "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.1.0.vsix",
