@@ -7,7 +7,8 @@ extension (running in openvscode-server) can call Gemini without an API key.
 from __future__ import annotations
 
 import json
-import subprocess
+import os
+import socket
 import threading
 import time
 import traceback
@@ -26,11 +27,22 @@ DEFAULT_MODELS = [
 ]
 DEFAULT_MODEL = DEFAULT_MODELS[0]
 
-_server: ThreadingHTTPServer | None = None
+# Notebook cells re-exec `_server = None` on every run. Keep the live server on a
+# stable key so re-runs can shut it down without killing the Colab kernel.
+_SERVER_KEY = "_vscolab_lm_http_server"
+
+
+def _get_server() -> ThreadingHTTPServer | None:
+    return globals().get(_SERVER_KEY)
+
+
+def _set_server(server: ThreadingHTTPServer | None) -> None:
+    globals()[_SERVER_KEY] = server
 
 
 class _ReuseHTTPServer(ThreadingHTTPServer):
     allow_reuse_address = True
+    daemon_threads = True
 
 
 def _bridge_healthy(host: str, port: int) -> bool:
@@ -41,18 +53,43 @@ def _bridge_healthy(host: str, port: int) -> bool:
         return False
 
 
-def _free_port(port: int) -> None:
-    """Best-effort kill of whatever is bound to ``port`` (previous cell run)."""
-    for cmd in (
-        ["fuser", "-k", f"{port}/tcp"],
-        ["bash", "-lc", f"lsof -ti tcp:{port} | xargs -r kill -9"],
-    ):
-        try:
-            subprocess.run(cmd, capture_output=True, check=False, timeout=5)
-            return
-        except Exception:
-            continue
+def _request_shutdown(host: str, port: int) -> None:
+    """Ask a live bridge (possibly from a prior cell run) to stop itself."""
+    try:
+        req = urllib.request.Request(
+            f"http://{host}:{port}/shutdown",
+            method="POST",
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=2):
+            pass
+    except Exception:
+        pass
 
+
+def _stop_server(server: ThreadingHTTPServer | None) -> None:
+    if server is None:
+        return
+    try:
+        server.shutdown()
+    except Exception:
+        pass
+    try:
+        server.server_close()
+    except Exception:
+        pass
+
+
+def _wait_port_free(host: str, port: int, timeout: float = 3.0) -> bool:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.2)
+            if sock.connect_ex((host, port)) != 0:
+                return True
+        time.sleep(0.1)
+    return False
 
 
 def _list_models() -> list[str]:
@@ -130,7 +167,7 @@ class _BridgeHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path.rstrip("/") or "/"
         if path == "/health":
-            self._json(200, {"status": "ok"})
+            self._json(200, {"status": "ok", "pid": os.getpid()})
             return
         if path == "/models":
             self._json(200, {"models": _list_models()})
@@ -139,6 +176,24 @@ class _BridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path.rstrip("/") or "/"
+        if path == "/shutdown":
+            self._json(200, {"status": "shutting_down"})
+            server = self.server
+
+            def _stop() -> None:
+                time.sleep(0.05)
+                try:
+                    server.shutdown()
+                except Exception:
+                    pass
+                try:
+                    server.server_close()
+                except Exception:
+                    pass
+
+            threading.Thread(target=_stop, daemon=True).start()
+            return
+
         if path != "/generate":
             self._json(404, {"error": "not found"})
             return
@@ -196,10 +251,9 @@ class _BridgeHandler(BaseHTTPRequestHandler):
 def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
     """Start the Colab AI bridge and return its base URL.
 
-    Always (re)starts the server so notebook re-runs pick up bridge code changes.
+    Restarts the in-process server on notebook re-runs. Never kills the Colab
+    kernel (the bridge shares this process).
     """
-    global _server
-
     url = f"http://{host}:{port}"
 
     try:
@@ -209,30 +263,39 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
             "google.colab.ai is only available inside Google Colab."
         ) from exc
 
-    if _server is not None:
-        try:
-            _server.shutdown()
-            _server.server_close()
-        except Exception:
-            pass
-        _server = None
+    existing = _get_server()
+    if existing is not None:
+        print("Stopping previous Colab AI bridge...", flush=True)
+        _stop_server(existing)
+        _set_server(None)
+        _wait_port_free(host, port)
+    elif _bridge_healthy(host, port):
+        # Prior cell left a live bridge but lost the Python reference.
+        print("Stopping previous Colab AI bridge via /shutdown...", flush=True)
+        _request_shutdown(host, port)
+        _wait_port_free(host, port)
 
     if _bridge_healthy(host, port):
-        print(f"Port {port} still in use; freeing previous bridge...", flush=True)
-        _free_port(port)
-        time.sleep(0.5)
+        # Still serving (shutdown raced or foreign process). Reuse — do NOT
+        # fuser/kill: that would terminate this Colab kernel.
+        print(f"Colab AI bridge already listening at {url} (reusing)", flush=True)
+        return url
 
     try:
-        _server = _ReuseHTTPServer((host, port), _BridgeHandler)
+        server = _ReuseHTTPServer((host, port), _BridgeHandler)
     except OSError as exc:
         if getattr(exc, "errno", None) != 98:  # EADDRINUSE
             raise
-        print(f"Port {port} busy; trying to free it...", flush=True)
-        _free_port(port)
-        time.sleep(0.5)
-        _server = _ReuseHTTPServer((host, port), _BridgeHandler)
+        if _bridge_healthy(host, port):
+            print(f"Colab AI bridge already listening at {url} (reusing)", flush=True)
+            return url
+        raise RuntimeError(
+            f"Port {port} is busy and the existing Colab AI bridge did not respond. "
+            "Restart the Colab runtime, then re-run this cell."
+        ) from exc
 
-    thread = threading.Thread(target=_server.serve_forever, daemon=True)
+    _set_server(server)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
     print(f"Colab AI bridge listening at {url}", flush=True)
