@@ -21,9 +21,9 @@ BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 8787
 DEFAULT_MODELS = [
     "gemini-3.6-flash",
+    "gemini-3.1-pro",
     "gemini-3.5-flash-lite",
     "gemini-3.5-flash",
-    "gemini-3.1-pro",
     "gemini-3.0-flash",
     "gemini-2.5-flash",
 ]
@@ -32,6 +32,7 @@ DEFAULT_MODEL = DEFAULT_MODELS[0]
 # Notebook cells re-exec `_server = None` on every run. Keep the live server on a
 # stable key so re-runs can shut it down without killing the Colab kernel.
 _SERVER_KEY = "_vscolab_lm_http_server"
+_AVAILABLE_KEY = "_vscolab_lm_available_models"
 
 
 def _get_server() -> ThreadingHTTPServer | None:
@@ -40,6 +41,19 @@ def _get_server() -> ThreadingHTTPServer | None:
 
 def _set_server(server: ThreadingHTTPServer | None) -> None:
     globals()[_SERVER_KEY] = server
+
+
+def _get_available() -> dict[str, str]:
+    """canonical id -> Colab API model name (may include ``google/`` prefix)."""
+    return globals().get(_AVAILABLE_KEY) or {}
+
+
+def _set_available(mapping: dict[str, str]) -> None:
+    globals()[_AVAILABLE_KEY] = mapping
+
+
+def _canonical_id(raw: str) -> str:
+    return raw.split("/", 1)[-1].strip()
 
 
 class _ReuseHTTPServer(ThreadingHTTPServer):
@@ -102,31 +116,87 @@ def _list_models() -> list[str]:
         discovered = [str(m) for m in ai.list_models()]
     except Exception as exc:
         print(f"colab_lm_bridge: list_models failed ({exc}); using defaults", flush=True)
+        _set_available({mid: mid for mid in DEFAULT_MODELS})
+        return list(DEFAULT_MODELS)
 
-    # Always surface the curated Gemini models, then any extras from Colab.
-    seen: set[str] = set()
-    models: list[str] = []
-    for mid in [*DEFAULT_MODELS, *discovered]:
-        if mid in seen:
+    available: dict[str, str] = {}
+    for raw in discovered:
+        cid = _canonical_id(raw)
+        if not cid:
             continue
-        seen.add(mid)
-        models.append(mid)
-    return models or list(DEFAULT_MODELS)
+        # Prefer Colab's exact string (often ``google/gemini-…``).
+        available.setdefault(cid, raw)
+    _set_available(available)
+
+    # Only advertise models this runtime can serve, in preferred order.
+    models = [mid for mid in DEFAULT_MODELS if mid in available]
+    for mid in available:
+        if mid not in models:
+            models.append(mid)
+    if not models:
+        print("colab_lm_bridge: list_models returned nothing; using defaults", flush=True)
+        _set_available({mid: mid for mid in DEFAULT_MODELS})
+        return list(DEFAULT_MODELS)
+    return models
 
 
-def _generate(prompt: str, model: str | None, stream: bool) -> str | Iterator[str]:
+def _resolve_model_name(model: str | None) -> str | None:
+    if not model:
+        return None
+    cid = _canonical_id(model)
+    available = _get_available()
+    if cid in available:
+        return available[cid]
+    if model in available.values():
+        return model
+    # Colab docs often use the google/ prefix.
+    if "/" not in model:
+        return f"google/{cid}"
+    return model
+
+
+def _call_generate(prompt: str, model_name: str | None, stream: bool) -> str | Iterator[str]:
     from google.colab import ai
 
     kwargs: dict[str, Any] = {"stream": stream}
-    if model:
-        # Colab has used both names across versions; prefer model_name (current runtime).
+    if model_name:
         try:
-            return ai.generate_text(prompt, model_name=model, **kwargs)
+            return ai.generate_text(prompt, model_name=model_name, **kwargs)
         except TypeError as exc:
             if "model_name" not in str(exc) and "unexpected keyword" not in str(exc):
                 raise
-            return ai.generate_text(prompt, model=model, **kwargs)
+            return ai.generate_text(prompt, model=model_name, **kwargs)
     return ai.generate_text(prompt, **kwargs)
+
+
+def _generate(prompt: str, model: str | None, stream: bool) -> str | Iterator[str]:
+    # Refresh availability if we haven't yet (e.g. reused bridge process).
+    if not _get_available():
+        _list_models()
+
+    resolved = _resolve_model_name(model)
+    candidates: list[str | None] = []
+    for name in (resolved, model, f"google/{_canonical_id(model)}" if model else None):
+        if name and name not in candidates:
+            candidates.append(name)
+    if not candidates:
+        candidates = [None]
+
+    last_exc: Exception | None = None
+    for name in candidates:
+        try:
+            return _call_generate(prompt, name, stream)
+        except Exception as exc:
+            msg = str(exc).lower()
+            last_exc = exc
+            if "unavailable" in msg or "not found" in msg or "404" in msg:
+                continue
+            raise
+    assert last_exc is not None
+    raise RuntimeError(
+        f"Model {model!r} is unavailable on this Colab runtime. "
+        f"Pick another model from the picker (served as {_list_models()})."
+    ) from last_exc
 
 
 def _messages_to_prompt(messages: list[dict[str, str]]) -> str:
@@ -280,7 +350,9 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
     if _bridge_healthy(host, port):
         # Still serving (shutdown raced or foreign process). Reuse — do NOT
         # fuser/kill: that would terminate this Colab kernel.
+        models = _list_models()
         print(f"Colab AI bridge already listening at {url} (reusing)", flush=True)
+        print(f"Available models: {', '.join(models)}", flush=True)
         return url
 
     try:
@@ -289,16 +361,20 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
         if getattr(exc, "errno", None) != 98:  # EADDRINUSE
             raise
         if _bridge_healthy(host, port):
+            models = _list_models()
             print(f"Colab AI bridge already listening at {url} (reusing)", flush=True)
+            print(f"Available models: {', '.join(models)}", flush=True)
             return url
         raise RuntimeError(
             f"Port {port} is busy and the existing Colab AI bridge did not respond. "
             "Restart the Colab runtime, then re-run this cell."
         ) from exc
 
+    models = _list_models()
     _set_server(server)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
     print(f"Colab AI bridge listening at {url}", flush=True)
+    print(f"Available models: {', '.join(models)}", flush=True)
     return url

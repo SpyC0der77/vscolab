@@ -33,8 +33,8 @@ COMMIT = ""
 VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
     {
-        "vsix": "colab-lm-0.2.2.vsix",
-        "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.2.vsix",
+        "vsix": "colab-lm-0.2.4.vsix",
+        "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.4.vsix",
     },
 ]
 TUNNEL_NAME = "vscolab-ai"

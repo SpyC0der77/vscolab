@@ -11,12 +11,19 @@ const DEFAULT_MAX_OUTPUT = 8192;
 
 const FALLBACK_MODELS = [
   { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
+  { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
   { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
   { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
-  { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
   { id: "gemini-3.0-flash", name: "Gemini 3.0 Flash" },
   { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
 ];
+
+const DEFAULT_MODEL_ID = "gemini-3.6-flash";
+const PINNED_MODEL_IDS = new Set([
+  "gemini-3.6-flash",
+  "gemini-3.1-pro",
+  "gemini-3.5-flash-lite",
+]);
 
 function getBridgeClient(): BridgeClient {
   const config = vscode.workspace.getConfiguration("colabLm");
@@ -59,9 +66,12 @@ function toBridgeMessages(
   return bridgeMessages;
 }
 
-function toModelInfo(model: { id: string; name: string }): vscode.LanguageModelChatInformation {
-  // isUserSelectable is used by some VS Code builds for picker visibility but is not
-  // yet on the stable LanguageModelChatInformation type.
+function toModelInfo(
+  model: { id: string; name: string },
+  isDefault: boolean,
+): vscode.LanguageModelChatInformation {
+  // isDefault / isUserSelectable control picker default + pinned visibility;
+  // not yet on the stable LanguageModelChatInformation type.
   return {
     id: model.id,
     name: model.name,
@@ -76,7 +86,8 @@ function toModelInfo(model: { id: string; name: string }): vscode.LanguageModelC
       toolCalling: true,
       imageInput: false,
     },
-    isUserSelectable: true,
+    isDefault,
+    isUserSelectable: PINNED_MODEL_IDS.has(model.id),
   } as vscode.LanguageModelChatInformation;
 }
 
@@ -100,6 +111,14 @@ function isAbortError(err: unknown): boolean {
   );
 }
 
+function pickDefaultModelId(models: readonly { id: string }[]): string | undefined {
+  return (
+    models.find((m) => m.id === DEFAULT_MODEL_ID)?.id ??
+    models.find((m) => PINNED_MODEL_IDS.has(m.id))?.id ??
+    models[0]?.id
+  );
+}
+
 export class ColabChatModelProvider implements vscode.LanguageModelChatProvider {
   async provideLanguageModelChatInformation(
     _options: { silent: boolean },
@@ -111,12 +130,14 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
     try {
       const models = await client.listModels();
       if (models.length > 0) {
-        return models.map(toModelInfo);
+        const defaultId = pickDefaultModelId(models);
+        return models.map((m) => toModelInfo(m, m.id === defaultId));
       }
     } catch {
       // fall through to defaults
     }
-    return FALLBACK_MODELS.map(toModelInfo);
+    const defaultId = pickDefaultModelId(FALLBACK_MODELS);
+    return FALLBACK_MODELS.map((m) => toModelInfo(m, m.id === defaultId));
   }
 
   async provideLanguageModelChatResponse(
