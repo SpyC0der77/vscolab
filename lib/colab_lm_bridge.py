@@ -19,15 +19,6 @@ from urllib.parse import urlparse
 
 BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 8787
-# Preferred order when Colab returns these ids — never advertised unless listed.
-PREFERRED_MODELS = [
-    "gemini-3.6-flash",
-    "gemini-3.1-pro",
-    "gemini-3.5-flash-lite",
-    "gemini-3.5-flash",
-    "gemini-3.0-flash",
-    "gemini-2.5-flash",
-]
 
 # Notebook cells re-exec `_server = None` on every run. Keep the live server on a
 # stable key so re-runs can shut it down without killing the Colab kernel.
@@ -119,18 +110,14 @@ def _list_models() -> list[str]:
         return []
 
     available: dict[str, str] = {}
+    models: list[str] = []
     for raw in discovered:
         cid = _canonical_id(raw)
-        if not cid:
+        if not cid or cid in available:
             continue
-        # Prefer Colab's exact string (often ``google/gemini-…``).
-        available.setdefault(cid, raw)
+        available[cid] = raw
+        models.append(cid)
     _set_available(available)
-
-    models = [mid for mid in PREFERRED_MODELS if mid in available]
-    for mid in available:
-        if mid not in models:
-            models.append(mid)
     return models
 
 

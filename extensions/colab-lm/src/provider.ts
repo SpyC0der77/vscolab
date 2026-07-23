@@ -9,13 +9,6 @@ import {
 const DEFAULT_MAX_INPUT = 1_000_000;
 const DEFAULT_MAX_OUTPUT = 8192;
 
-const DEFAULT_MODEL_ID = "gemini-3.6-flash";
-const PINNED_MODEL_IDS = new Set([
-  "gemini-3.6-flash",
-  "gemini-3.1-pro",
-  "gemini-3.5-flash-lite",
-]);
-
 function getBridgeClient(): BridgeClient {
   const config = vscode.workspace.getConfiguration("colabLm");
   const baseUrl = config.get<string>("bridgeUrl", "http://127.0.0.1:8787");
@@ -59,9 +52,9 @@ function toBridgeMessages(
 
 function toModelInfo(
   model: { id: string; name: string },
-  opts: { isDefault: boolean; isUserSelectable: boolean },
+  isDefault: boolean,
 ): vscode.LanguageModelChatInformation {
-  // isDefault / isUserSelectable control picker default + pinned visibility;
+  // isDefault / isUserSelectable control picker default + visibility;
   // not yet on the stable LanguageModelChatInformation type.
   return {
     id: model.id,
@@ -77,8 +70,8 @@ function toModelInfo(
       toolCalling: true,
       imageInput: false,
     },
-    isDefault: opts.isDefault,
-    isUserSelectable: opts.isUserSelectable,
+    isDefault,
+    isUserSelectable: true,
   } as vscode.LanguageModelChatInformation;
 }
 
@@ -102,37 +95,14 @@ function isAbortError(err: unknown): boolean {
   );
 }
 
-function pickDefaultModelId(models: readonly { id: string }[]): string | undefined {
-  return (
-    models.find((m) => m.id === DEFAULT_MODEL_ID)?.id ??
-    models.find((m) => PINNED_MODEL_IDS.has(m.id))?.id ??
-    models[0]?.id
-  );
-}
-
-function toModelInfos(
-  models: readonly { id: string; name: string }[],
-): vscode.LanguageModelChatInformation[] {
-  const defaultId = pickDefaultModelId(models);
-  // Prefer pinned models in the chat picker; if none of those are available
-  // on this Colab runtime, surface every available model instead.
-  const hasPinned = models.some((m) => PINNED_MODEL_IDS.has(m.id));
-  return models.map((m) =>
-    toModelInfo(m, {
-      isDefault: m.id === defaultId,
-      isUserSelectable: hasPinned ? PINNED_MODEL_IDS.has(m.id) : true,
-    }),
-  );
-}
-
 export class ColabChatModelProvider implements vscode.LanguageModelChatProvider {
   async provideLanguageModelChatInformation(
     _options: { silent: boolean },
     _token: vscode.CancellationToken,
   ): Promise<vscode.LanguageModelChatInformation[]> {
-    // Only models Colab reports via the bridge — never invent fallbacks.
     try {
-      return toModelInfos(await getBridgeClient().listModels());
+      const models = await getBridgeClient().listModels();
+      return models.map((m, i) => toModelInfo(m, i === 0));
     } catch {
       return [];
     }
