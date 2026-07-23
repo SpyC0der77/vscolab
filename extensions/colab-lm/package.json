@@ -3,7 +3,7 @@
   "publisher": "vscolab",
   "displayName": "Colab AI",
   "description": "Language Model Chat Provider backed by google.colab.ai in Google Colab.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "engines": {
     "vscode": "^1.104.0"
   },
@@ -11,7 +11,9 @@
     "AI",
     "Chat"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "languageModelChatProviders": [

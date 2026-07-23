@@ -18,6 +18,8 @@ You get this for free when you run an [AI-tier vscolab notebook](https://github.
 
 Command palette: **Colab AI: Show Bridge Status**
 
+Status bar (bottom left): **Colab AI** — green check when the bridge is up, warning when not. Click for details.
+
 ## Develop
 
 ```bash
@@ -27,4 +29,4 @@ bun run compile
 bun run package
 ```
 
-That writes `colab-lm-0.2.1.vsix`. The AI notebooks pull the committed copy from this repo.
+That writes `colab-lm-0.2.2.vsix`. The AI notebooks pull the committed copy from this repo.

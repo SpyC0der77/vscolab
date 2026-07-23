@@ -1,11 +1,24 @@
 import * as vscode from "vscode";
 import { BridgeClient } from "./bridgeClient";
 import { ColabChatModelProvider } from "./provider";
+import { BridgeStatusBar } from "./statusBar";
 
 export function activate(context: vscode.ExtensionContext) {
   vscode.lm.registerLanguageModelChatProvider(
     "colab",
     new ColabChatModelProvider(),
+  );
+
+  const statusBar = new BridgeStatusBar();
+  statusBar.start();
+  context.subscriptions.push(statusBar);
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("colabLm.bridgeUrl")) {
+        void statusBar.refresh();
+      }
+    }),
   );
 
   context.subscriptions.push(
@@ -16,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
         .replace(/\/$/, "");
       const client = new BridgeClient(baseUrl);
       const healthy = await client.health();
+      void statusBar.refresh();
       if (!healthy) {
         await vscode.window.showWarningMessage(
           `Colab AI bridge is not reachable at ${baseUrl}. Run the vscolab AI notebook cell first.`,
