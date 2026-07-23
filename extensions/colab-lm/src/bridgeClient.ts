@@ -8,15 +8,6 @@ export interface BridgeModel {
   name: string;
 }
 
-const DEFAULT_MODELS: BridgeModel[] = [
-  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
-  { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
-  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
-  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
-  { id: "gemini-3.0-flash", name: "Gemini 3.0 Flash" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-];
-
 export class BridgeClient {
   constructor(private readonly baseUrl: string) {}
 
@@ -30,23 +21,15 @@ export class BridgeClient {
   }
 
   async listModels(): Promise<BridgeModel[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/models`);
-      if (!res.ok) {
-        return DEFAULT_MODELS;
-      }
-      const data = (await res.json()) as { models?: string[] };
-      const models = data.models ?? [];
-      if (models.length === 0) {
-        return DEFAULT_MODELS;
-      }
-      return models.map((id) => ({
-        id,
-        name: formatModelName(id),
-      }));
-    } catch {
-      return DEFAULT_MODELS;
+    const res = await fetch(`${this.baseUrl}/models`);
+    if (!res.ok) {
+      return [];
     }
+    const data = (await res.json()) as { models?: string[] };
+    return (data.models ?? []).map((id) => ({
+      id,
+      name: formatModelName(id),
+    }));
   }
 
   async *generate(

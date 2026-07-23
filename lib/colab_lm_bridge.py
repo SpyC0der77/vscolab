@@ -19,7 +19,8 @@ from urllib.parse import urlparse
 
 BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 8787
-DEFAULT_MODELS = [
+# Preferred order when Colab returns these ids — never advertised unless listed.
+PREFERRED_MODELS = [
     "gemini-3.6-flash",
     "gemini-3.1-pro",
     "gemini-3.5-flash-lite",
@@ -27,7 +28,6 @@ DEFAULT_MODELS = [
     "gemini-3.0-flash",
     "gemini-2.5-flash",
 ]
-DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 # Notebook cells re-exec `_server = None` on every run. Keep the live server on a
 # stable key so re-runs can shut it down without killing the Colab kernel.
@@ -109,15 +109,14 @@ def _wait_port_free(host: str, port: int, timeout: float = 3.0) -> bool:
 
 
 def _list_models() -> list[str]:
-    discovered: list[str] = []
     try:
         from google.colab import ai
 
         discovered = [str(m) for m in ai.list_models()]
     except Exception as exc:
-        print(f"colab_lm_bridge: list_models failed ({exc}); using defaults", flush=True)
-        _set_available({mid: mid for mid in DEFAULT_MODELS})
-        return list(DEFAULT_MODELS)
+        print(f"colab_lm_bridge: list_models failed ({exc})", flush=True)
+        _set_available({})
+        return []
 
     available: dict[str, str] = {}
     for raw in discovered:
@@ -128,15 +127,10 @@ def _list_models() -> list[str]:
         available.setdefault(cid, raw)
     _set_available(available)
 
-    # Only advertise models this runtime can serve, in preferred order.
-    models = [mid for mid in DEFAULT_MODELS if mid in available]
+    models = [mid for mid in PREFERRED_MODELS if mid in available]
     for mid in available:
         if mid not in models:
             models.append(mid)
-    if not models:
-        print("colab_lm_bridge: list_models returned nothing; using defaults", flush=True)
-        _set_available({mid: mid for mid in DEFAULT_MODELS})
-        return list(DEFAULT_MODELS)
     return models
 
 

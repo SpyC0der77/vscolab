@@ -9,15 +9,6 @@ import {
 const DEFAULT_MAX_INPUT = 1_000_000;
 const DEFAULT_MAX_OUTPUT = 8192;
 
-const FALLBACK_MODELS = [
-  { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
-  { id: "gemini-3.1-pro", name: "Gemini 3.1 Pro" },
-  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
-  { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
-  { id: "gemini-3.0-flash", name: "Gemini 3.0 Flash" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
-];
-
 const DEFAULT_MODEL_ID = "gemini-3.6-flash";
 const PINNED_MODEL_IDS = new Set([
   "gemini-3.6-flash",
@@ -139,18 +130,12 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
     _options: { silent: boolean },
     _token: vscode.CancellationToken,
   ): Promise<vscode.LanguageModelChatInformation[]> {
-    // Always return models so silent discovery can populate the picker.
-    // Connectivity failures surface when a chat request is actually sent.
-    const client = getBridgeClient();
+    // Only models Colab reports via the bridge — never invent fallbacks.
     try {
-      const models = await client.listModels();
-      if (models.length > 0) {
-        return toModelInfos(models);
-      }
+      return toModelInfos(await getBridgeClient().listModels());
     } catch {
-      // fall through to defaults
+      return [];
     }
-    return toModelInfos(FALLBACK_MODELS);
   }
 
   async provideLanguageModelChatResponse(
