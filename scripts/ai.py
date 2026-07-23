@@ -10,8 +10,8 @@ VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
     # Copilot Chat ships with official VS Code — do not marketplace-install it.
     {
-        "vsix": "colab-lm-0.2.0.vsix",
-        "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.0.vsix",
+        "vsix": "colab-lm-0.2.1.vsix",
+        "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.1.vsix",
     },
 ]
 CACHE_DIR = Path("/content/vscode-cache")

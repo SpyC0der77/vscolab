@@ -3,13 +3,10 @@
 VS Code in [Google Colab](https://colab.research.google.com/). Persistent notebooks sync the workspace to Google Drive.
 
 
-| Tier     | What you get                                                                                                                                     |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Standard | [openvscode-server](https://github.com/gitpod-io/openvscode-server) behind Colab `proxyPort`                                                     |
-| AI       | Official VS Code over [Remote Tunnels](https://code.visualstudio.com/docs/remote/tunnels) → [vscode.dev](https://vscode.dev), plus Colab AI chat |
-
-
-AI needs the Microsoft build (Copilot Chat + LM providers). Colab `proxyPort` drops that server's WebSockets (error 1006), so the AI notebooks use tunnels instead.
+| Tier     | What you get                                      |
+| -------- | ------------------------------------------------- |
+| Standard | VS Code in the browser via Colab                  |
+| AI       | Full VS Code + Copilot Chat with Colab AI         |
 
 ## Quick start
 

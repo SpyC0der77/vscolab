@@ -27,4 +27,4 @@ bun run compile
 bun run package
 ```
 
-That writes `colab-lm-0.2.0.vsix`. The AI notebooks pull the committed copy from this repo.
+That writes `colab-lm-0.2.1.vsix`. The AI notebooks pull the committed copy from this repo.
