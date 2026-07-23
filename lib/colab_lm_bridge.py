@@ -13,12 +13,17 @@ import threading
 import time
 import traceback
 import urllib.request
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import urlparse
 
 BRIDGE_HOST = "127.0.0.1"
 BRIDGE_PORT = 8787
+# Outside the VS Code workspace (/content/workspace) so it stays Colab-VM-only.
+LOG_PATH = Path("/content/.vscolab/colab_lm_bridge.log")
+_LOG_LOCK = threading.Lock()
 
 # Notebook cells re-exec `_server = None` on every run. Keep the live server on a
 # stable key so re-runs can shut it down without killing the Colab kernel.
@@ -193,6 +198,28 @@ def _messages_to_prompt(messages: list[dict[str, str]]) -> str:
     return "\n\n".join(parts)
 
 
+def _chunk_text(chunk: Any) -> str | None:
+    """OpenAI-style streams often yield ``None`` for role-only deltas."""
+    if chunk is None:
+        return None
+    if isinstance(chunk, str):
+        return chunk
+    return str(chunk)
+
+
+def _log_exchange(request: dict[str, Any], response: dict[str, Any]) -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "request": request,
+        "response": response,
+    }
+    line = json.dumps(entry, ensure_ascii=False) + "\n"
+    with _LOG_LOCK:
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(line)
+
+
 class _BridgeHandler(BaseHTTPRequestHandler):
     server_version = "vscolab-colab-lm/1.0"
 
@@ -269,17 +296,30 @@ class _BridgeHandler(BaseHTTPRequestHandler):
 
         model = payload.get("model")
         stream = bool(payload.get("stream"))
+        request_log = {
+            "path": "/generate",
+            "model": model,
+            "stream": stream,
+            "prompt": prompt,
+            "messages": messages,
+            "payload": payload,
+        }
 
         try:
             result = _generate(prompt, model, stream)
         except Exception as exc:
             print(f"colab_lm_bridge: generate failed: {exc}", flush=True)
             traceback.print_exc()
-            self._json(500, {"error": str(exc)})
+            response = {"error": str(exc)}
+            _log_exchange(request_log, response)
+            self._json(500, response)
             return
 
         if not stream:
-            self._json(200, {"text": str(result)})
+            text = _chunk_text(result) or ""
+            response = {"text": text}
+            _log_exchange(request_log, response)
+            self._json(200, response)
             return
 
         self.send_response(200)
@@ -288,17 +328,35 @@ class _BridgeHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
+        chunks: list[str] = []
         try:
-            for chunk in result:
-                line = json.dumps({"text": str(chunk)}) + "\n"
+            for raw in result:
+                text = _chunk_text(raw)
+                if text is None:
+                    continue
+                chunks.append(text)
+                line = json.dumps({"text": text}) + "\n"
                 data = line.encode()
                 self.wfile.write(f"{len(data):x}\r\n".encode())
                 self.wfile.write(data)
                 self.wfile.write(b"\r\n")
                 self.wfile.flush()
             self.wfile.write(b"0\r\n\r\n")
+            _log_exchange(
+                request_log,
+                {"stream": True, "text": "".join(chunks), "chunks": chunks},
+            )
         except Exception as exc:
             print(f"colab_lm_bridge: stream failed: {exc}", flush=True)
+            _log_exchange(
+                request_log,
+                {
+                    "stream": True,
+                    "error": str(exc),
+                    "text": "".join(chunks),
+                    "chunks": chunks,
+                },
+            )
 
 
 def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
@@ -334,6 +392,7 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
         models = _list_models()
         print(f"Colab AI bridge already listening at {url} (reusing)", flush=True)
         print(f"Available models: {', '.join(models)}", flush=True)
+        print(f"Request/response log: {LOG_PATH}", flush=True)
         return url
 
     try:
@@ -345,6 +404,7 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
             models = _list_models()
             print(f"Colab AI bridge already listening at {url} (reusing)", flush=True)
             print(f"Available models: {', '.join(models)}", flush=True)
+            print(f"Request/response log: {LOG_PATH}", flush=True)
             return url
         raise RuntimeError(
             f"Port {port} is busy and the existing Colab AI bridge did not respond. "
@@ -358,4 +418,5 @@ def setup_colab_lm(host: str = BRIDGE_HOST, port: int = BRIDGE_PORT) -> str:
 
     print(f"Colab AI bridge listening at {url}", flush=True)
     print(f"Available models: {', '.join(models)}", flush=True)
+    print(f"Request/response log: {LOG_PATH}", flush=True)
     return url

@@ -81,8 +81,8 @@ export class BridgeClient {
           if (!trimmed) {
             continue;
           }
-          const chunk = JSON.parse(trimmed) as { text?: string };
-          if (chunk.text) {
+          const chunk = JSON.parse(trimmed) as { text?: string | null };
+          if (typeof chunk.text === "string" && chunk.text.length > 0) {
             yield chunk.text;
           }
         }
@@ -96,8 +96,8 @@ export class BridgeClient {
 
     const tail = buffer.trim();
     if (tail) {
-      const chunk = JSON.parse(tail) as { text?: string };
-      if (chunk.text) {
+      const chunk = JSON.parse(tail) as { text?: string | null };
+      if (typeof chunk.text === "string" && chunk.text.length > 0) {
         yield chunk.text;
       }
     }
