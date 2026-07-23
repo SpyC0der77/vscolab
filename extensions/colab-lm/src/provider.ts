@@ -68,7 +68,7 @@ function toBridgeMessages(
 
 function toModelInfo(
   model: { id: string; name: string },
-  isDefault: boolean,
+  opts: { isDefault: boolean; isUserSelectable: boolean },
 ): vscode.LanguageModelChatInformation {
   // isDefault / isUserSelectable control picker default + pinned visibility;
   // not yet on the stable LanguageModelChatInformation type.
@@ -86,8 +86,8 @@ function toModelInfo(
       toolCalling: true,
       imageInput: false,
     },
-    isDefault,
-    isUserSelectable: PINNED_MODEL_IDS.has(model.id),
+    isDefault: opts.isDefault,
+    isUserSelectable: opts.isUserSelectable,
   } as vscode.LanguageModelChatInformation;
 }
 
@@ -119,6 +119,21 @@ function pickDefaultModelId(models: readonly { id: string }[]): string | undefin
   );
 }
 
+function toModelInfos(
+  models: readonly { id: string; name: string }[],
+): vscode.LanguageModelChatInformation[] {
+  const defaultId = pickDefaultModelId(models);
+  // Prefer pinned models in the chat picker; if none of those are available
+  // on this Colab runtime, surface every available model instead.
+  const hasPinned = models.some((m) => PINNED_MODEL_IDS.has(m.id));
+  return models.map((m) =>
+    toModelInfo(m, {
+      isDefault: m.id === defaultId,
+      isUserSelectable: hasPinned ? PINNED_MODEL_IDS.has(m.id) : true,
+    }),
+  );
+}
+
 export class ColabChatModelProvider implements vscode.LanguageModelChatProvider {
   async provideLanguageModelChatInformation(
     _options: { silent: boolean },
@@ -130,14 +145,12 @@ export class ColabChatModelProvider implements vscode.LanguageModelChatProvider 
     try {
       const models = await client.listModels();
       if (models.length > 0) {
-        const defaultId = pickDefaultModelId(models);
-        return models.map((m) => toModelInfo(m, m.id === defaultId));
+        return toModelInfos(models);
       }
     } catch {
       // fall through to defaults
     }
-    const defaultId = pickDefaultModelId(FALLBACK_MODELS);
-    return FALLBACK_MODELS.map((m) => toModelInfo(m, m.id === defaultId));
+    return toModelInfos(FALLBACK_MODELS);
   }
 
   async provideLanguageModelChatResponse(

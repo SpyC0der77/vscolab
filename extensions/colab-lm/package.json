@@ -3,7 +3,7 @@
   "publisher": "vscolab",
   "displayName": "Colab AI",
   "description": "Language Model Chat Provider backed by google.colab.ai in Google Colab.",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "engines": {
     "vscode": "^1.104.0"
   },
