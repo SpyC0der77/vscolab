@@ -4,6 +4,7 @@ from pathlib import Path
 
 from extensions_install import install_extensions
 
+# @vscolab-config
 VERSION = "openvscode-server-v1.109.5"
 PORT = 3000
 GIT_REPO = ""
@@ -13,6 +14,8 @@ EXTENSIONS = [
     # VSIX from URL:
     # {"vsix": "name.vsix", "url": "https://..."},
 ]
+# @vscolab-config-end
+
 SERVER_DATA_DIR = Path("/content/.openvscode-server-data")
 VSIX_CACHE_DIR = Path("/content")
 

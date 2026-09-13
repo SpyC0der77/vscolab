@@ -42,11 +42,11 @@ MyDrive/vscolab/
 └── …                # workspace files
 ```
 
-Edit a script under `scripts/`, then `python tools/sync_notebooks.py` to refresh the notebooks.
+Edit a script under `scripts/`, then `python tools/sync_notebooks.py` to refresh the notebooks. Notebooks get a **Config** cell (Colab form) plus a generated **Start** cell.
 
 ## Config
 
-Set these at the top of the `.py` (or matching notebook cell):
+Edit the notebook Config cell, or the `# @vscolab-config` block in the matching `.py`:
 
 
 | Variable        | Default                      | Used by                                                |

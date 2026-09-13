@@ -3,9 +3,9 @@ from pathlib import Path
 from colab_lm_bridge import setup_colab_lm
 from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web
 
-PORT = 3000  # unused with tunnels; kept for notebook compatibility
+# @vscolab-config
 GIT_REPO = ""
-COMMIT = ""
+TUNNEL_NAME = "vscolab-ai"
 VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
 EXTENSIONS = [
     # Copilot Chat ships with official VS Code — do not marketplace-install it.
@@ -14,9 +14,12 @@ EXTENSIONS = [
         "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.7.vsix",
     },
 ]
+# @vscolab-config-end
+
+PORT = 3000  # unused with tunnels; kept for notebook compatibility
+COMMIT = ""
 CACHE_DIR = Path("/content/vscode-cache")
 USER_DATA_DIR = Path("/content/.vscode-server-data")
-TUNNEL_NAME = "vscolab-ai"
 
 folder = Path("/content/workspace")
 if GIT_REPO:

@@ -13,7 +13,19 @@ from pathlib import Path
 from extensions_install import install_extensions
 from google.colab import drive, output
 
+# @vscolab-config
 SYNC_INTERVAL = 5
+VERSION = "openvscode-server-v1.109.5"
+PORT = 3000
+GIT_REPO = ""
+EXTENSIONS = [
+    # Marketplace IDs:
+    # "ms-python.python",
+    # VSIX from URL:
+    # {"vsix": "name.vsix", "url": "https://..."},
+]
+# @vscolab-config-end
+
 DRIVE_STORE = Path("/content/drive/MyDrive/vscolab")
 IGNORE_FILE = ".vscolabignore"
 DEFAULT_IGNORE = """\
@@ -26,16 +38,6 @@ venv/
 *.egg-info/
 .git/
 """
-
-VERSION = "openvscode-server-v1.109.5"
-PORT = 3000
-GIT_REPO = ""
-EXTENSIONS = [
-    # Marketplace IDs:
-    # "ms-python.python",
-    # VSIX from URL:
-    # {"vsix": "name.vsix", "url": "https://..."},
-]
 
 
 class Persistence:

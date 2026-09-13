@@ -13,7 +13,19 @@ from colab_lm_bridge import setup_colab_lm
 from google.colab import drive
 from vscode_bootstrap import login_vscode, prepare_vscode, start_vscode_web
 
+# @vscolab-config
 SYNC_INTERVAL = 5
+GIT_REPO = ""
+TUNNEL_NAME = "vscolab-ai"
+VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
+EXTENSIONS = [
+    {
+        "vsix": "colab-lm-0.2.7.vsix",
+        "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.7.vsix",
+    },
+]
+# @vscolab-config-end
+
 DRIVE_STORE = Path("/content/drive/MyDrive/vscolab")
 IGNORE_FILE = ".vscolabignore"
 DEFAULT_IGNORE = """\
@@ -28,16 +40,7 @@ venv/
 """
 
 PORT = 3000  # unused with tunnels
-GIT_REPO = ""
 COMMIT = ""
-VSCOLAB_RAW = "https://github.com/SpyC0der77/vscolab/raw/master"
-EXTENSIONS = [
-    {
-        "vsix": "colab-lm-0.2.7.vsix",
-        "url": f"{VSCOLAB_RAW}/extensions/colab-lm/colab-lm-0.2.7.vsix",
-    },
-]
-TUNNEL_NAME = "vscolab-ai"
 
 
 class Persistence:
